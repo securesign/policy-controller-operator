@@ -1,0 +1,42 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: policy-controller-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: rhtas-policy-controller
+  displayName: rhtas-policy-controller
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - test
+  - test1
+  links:
+  - name: Policy Controller Operator
+    url: https://policy-controller-operator.domain
+  maintainers:
+  - email: japower@redhat.com
+    name: Jason Power
+  maturity: alpha
+  provider:
+    name: Red Hat
+  version: 0.0.0

@@ -1,0 +1,98 @@
+apiVersion: rhtas.charts.redhat.com/v1alpha1
+kind: PolicyController
+metadata:
+  name: policycontroller-sample
+spec:
+  # Default values copied from <project_dir>/helm-charts/policy-controller/values.yaml
+  commonAnnotations: {}
+  commonNodeSelector: {}
+  commonTolerations: []
+  cosign:
+    cosignPub: ""
+    webhookName: policy.sigstore.dev
+    webhookTimeoutSeconds: {}
+  imagePullSecrets: []
+  installCRDs: true
+  leasescleanup:
+    automountServiceAccountToken: true
+    image:
+      pullPolicy: IfNotPresent
+      repository: cgr.dev/chainguard/kubectl
+      version: latest-dev
+    podSecurityContext:
+      enabled: false
+    priorityClass: ""
+    resources:
+      limits:
+        cpu: ""
+        memory: ""
+      requests:
+        cpu: ""
+        memory: ""
+  loglevel: info
+  serviceMonitor:
+    enabled: false
+  webhook:
+    affinity: {}
+    automountServiceAccountToken: true
+    configData: {}
+    customLabels: {}
+    env: {}
+    envFrom: {}
+    extraArgs: {}
+    failurePolicy: Fail
+    image:
+      pullPolicy: IfNotPresent
+      repository: quay.io/securesign/policy-controller
+      version: sha256:77ea7af66c7b323e746ce2b783ef63c590307e04a9136af7b8d527e53c7b96cd
+    name: webhook
+    namespaceSelector:
+      matchExpressions:
+      - key: policy.sigstore.dev/include
+        operator: In
+        values:
+        - "true"
+    podAnnotations: {}
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    podSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      enabled: true
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    priorityClass: ""
+    registryCaBundle: {}
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    securityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    service:
+      annotations: {}
+      port: 443
+      type: ClusterIP
+    serviceAccount:
+      annotations: {}
+      create: true
+      name: ""
+    volumeMounts: []
+    volumes: []
+    webhookNames:
+      defaulting: defaulting.clusterimagepolicy.sigstore.dev
+      validating: validating.clusterimagepolicy.sigstore.dev
+    webhookTimeoutSeconds: {}
+  
+  
