@@ -6,8 +6,6 @@ cosign:
     # mutating: 10
     # validating: 10
 
-installCRDs: true
-
 imagePullSecrets: []
 
 loglevel: info

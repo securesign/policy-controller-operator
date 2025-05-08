@@ -12,7 +12,6 @@ spec:
     webhookName: policy.sigstore.dev
     webhookTimeoutSeconds: {}
   imagePullSecrets: []
-  installCRDs: true
   leasescleanup:
     automountServiceAccountToken: true
     image:
