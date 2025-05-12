@@ -1,7 +1,7 @@
 cosign:
   # add the values in base64 encoded
   cosignPub: ""
-  webhookName: "policy.sigstore.dev"
+  webhookName: "policy.rhtas.dev"
   webhookTimeoutSeconds: {}
     # mutating: 10
     # validating: 10
@@ -29,7 +29,6 @@ webhook:
     # secrets:
     #   - mys1
     #   - mys2
-  extraArgs: {}
   resources:
     limits:
       cpu: 200m
@@ -75,13 +74,13 @@ webhook:
   volumes: []
   namespaceSelector:
     matchExpressions:
-      - key: policy.sigstore.dev/include
+      - key: policy.rhtas.dev/include
         operator: In
         values: ["true"]
   registryCaBundle: {}
   webhookNames:
-    defaulting: "defaulting.clusterimagepolicy.sigstore.dev"
-    validating: "validating.clusterimagepolicy.sigstore.dev"
+    defaulting: "defaulting.clusterimagepolicy.rhtas.dev"
+    validating: "validating.clusterimagepolicy.rhtas.dev"
   webhookTimeoutSeconds: {}
     # defaulting: 10
     # validating: 10

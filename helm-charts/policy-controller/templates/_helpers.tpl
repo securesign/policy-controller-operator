@@ -134,7 +134,7 @@ Create the image path for the passed in leases-cleanup image field
 {{ toYaml .Values.webhook.namespaceSelector }}
 {{- else }}
 matchExpressions:
-  - key: policy.sigstore.dev/include
+  - key: policy.rhtas.dev/include
     operator: In
     values: ["true"]
 {{- end }}

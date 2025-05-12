@@ -1,7 +1,7 @@
 annotations:
   artifacthub.io/images: |
     - name: policy-controller
-      image: ghcr.io/sigstore/policy-controller/policy-controller:v0.12.0@sha256:6b51f336dec9e9adff29606855dbd2c7910c5eb80d6579795a29cb3844428efc
+      image: quay.io/securesign/policy-controller@sha256:77ea7af66c7b323e746ce2b783ef63c590307e04a9136af7b8d527e53c7b96cd
   artifacthub.io/license: Apache-2.0
 apiVersion: v2
 appVersion: 0.12.0

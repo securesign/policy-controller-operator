@@ -9,7 +9,7 @@ spec:
   commonTolerations: []
   cosign:
     cosignPub: ""
-    webhookName: policy.sigstore.dev
+    webhookName: policy.rhtas.dev
     webhookTimeoutSeconds: {}
   imagePullSecrets: []
   installCRDs: true
@@ -39,7 +39,6 @@ spec:
     customLabels: {}
     env: {}
     envFrom: {}
-    extraArgs: {}
     failurePolicy: Fail
     image:
       pullPolicy: IfNotPresent
@@ -48,7 +47,7 @@ spec:
     name: webhook
     namespaceSelector:
       matchExpressions:
-      - key: policy.sigstore.dev/include
+      - key: policy.rhtas.dev/include
         operator: In
         values:
         - "true"
@@ -91,8 +90,8 @@ spec:
     volumeMounts: []
     volumes: []
     webhookNames:
-      defaulting: defaulting.clusterimagepolicy.sigstore.dev
-      validating: validating.clusterimagepolicy.sigstore.dev
+      defaulting: defaulting.clusterimagepolicy.rhtas.dev
+      validating: validating.clusterimagepolicy.rhtas.dev
     webhookTimeoutSeconds: {}
   
   
