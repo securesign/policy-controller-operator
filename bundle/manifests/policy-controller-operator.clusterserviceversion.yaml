@@ -114,7 +114,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-14T07:30:15Z"
+    createdAt: "2025-05-14T08:11:39Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
@@ -123,8 +123,17 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
+    - kind: ClusterImagePolicy
+      name: clusterimagepolicies.policy.sigstore.dev
+      version: v1alpha1
+    - kind: ClusterImagePolicy
+      name: clusterimagepolicies.policy.sigstore.dev
+      version: v1beta1
     - kind: PolicyController
       name: policycontrollers.rhtas.charts.redhat.com
+      version: v1alpha1
+    - kind: TrustRoot
+      name: trustroots.policy.sigstore.dev
       version: v1alpha1
   description: rhtas-policy-controller
   displayName: rhtas-policy-controller
