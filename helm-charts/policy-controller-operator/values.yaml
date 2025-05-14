@@ -2,7 +2,7 @@ policy-controller:
   cosign:
     # add the values in base64 encoded
     cosignPub: ""
-    webhookName: "policy.sigstore.dev"
+    webhookName: "policy.rhtas.com"
     webhookTimeoutSeconds: {}
       # mutating: 10
       # validating: 10
@@ -73,13 +73,13 @@ policy-controller:
     volumes: []
     namespaceSelector:
       matchExpressions:
-        - key: policy.sigstore.dev/include
+        - key: policy.rhtas.com/include
           operator: In
           values: ["true"]
     registryCaBundle: {}
     webhookNames:
-      defaulting: "defaulting.clusterimagepolicy.sigstore.dev"
-      validating: "validating.clusterimagepolicy.sigstore.dev"
+      defaulting: "defaulting.clusterimagepolicy.rhtas.com"
+      validating: "validating.clusterimagepolicy.rhtas.com"
     webhookTimeoutSeconds: {}
       # defaulting: 10
       # validating: 10
