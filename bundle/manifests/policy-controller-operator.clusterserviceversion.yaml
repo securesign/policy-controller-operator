@@ -114,7 +114,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-14T08:19:38Z"
+    createdAt: "2025-05-14T13:40:47Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
@@ -230,13 +230,13 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
-        serviceAccountName: policy-controller-operator-controller-manager
+        serviceAccountName: policy-op-controller-manager
       deployments:
       - label:
           app.kubernetes.io/managed-by: kustomize
           app.kubernetes.io/name: policy-controller-operator
           control-plane: controller-manager
-        name: policy-controller-operator-controller-manager
+        name: policy-op-controller-manager
         spec:
           replicas: 1
           selector:
@@ -286,7 +286,7 @@ spec:
                     - ALL
               securityContext:
                 runAsNonRoot: true
-              serviceAccountName: policy-controller-operator-controller-manager
+              serviceAccountName: policy-op-controller-manager
               terminationGracePeriodSeconds: 10
       permissions:
       - rules:
@@ -321,7 +321,7 @@ spec:
           verbs:
           - create
           - patch
-        serviceAccountName: policy-controller-operator-controller-manager
+        serviceAccountName: policy-op-controller-manager
     strategy: deployment
   installModes:
   - supported: true

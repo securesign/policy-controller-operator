@@ -5,15 +5,19 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: policy-controller-operator
-  name: policy-controller-operator-policycontroller-viewer-role
+  name: policy-op-policycontroller-editor-role
 rules:
 - apiGroups:
   - rhtas.charts.redhat.com
   resources:
   - policycontrollers
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - rhtas.charts.redhat.com

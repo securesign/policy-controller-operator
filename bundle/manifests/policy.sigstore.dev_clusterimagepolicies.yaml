@@ -10,7 +10,7 @@ spec:
       clientConfig:
         service:
           name: webhook
-          namespace: policy-controller-operator-system
+          namespace: policy-controller-operator
       conversionReviewVersions:
       - v1beta1
       - v1alpha1
