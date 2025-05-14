@@ -41,10 +41,6 @@ spec:
     envFrom: {}
     extraArgs: {}
     failurePolicy: Fail
-    image:
-      pullPolicy: IfNotPresent
-      repository: quay.io/securesign/policy-controller
-      version: sha256:77ea7af66c7b323e746ce2b783ef63c590307e04a9136af7b8d527e53c7b96cd
     name: webhook
     namespaceSelector:
       matchExpressions:
@@ -56,16 +52,6 @@ spec:
     podDisruptionBudget:
       enabled: true
       minAvailable: 1
-    podSecurityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-        - ALL
-      enabled: true
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
     priorityClass: ""
     registryCaBundle: {}
     replicaCount: 1
@@ -76,10 +62,6 @@ spec:
       requests:
         cpu: 100m
         memory: 128Mi
-    securityContext:
-      runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
     service:
       annotations: {}
       port: 443

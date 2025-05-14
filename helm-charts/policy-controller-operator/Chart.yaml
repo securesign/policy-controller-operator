@@ -1,0 +1,11 @@
+apiVersion: v2
+name: policy-controller-operator
+description: A helm based operator for deploying and managing instances of the sigstore policy controller on kubernetes.
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+dependencies:
+  - name: policy-controller
+    version: 0.10.1
+    repository: "file://charts/policy-controller"
+    alias: policy-controller

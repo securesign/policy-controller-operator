@@ -2,16 +2,124 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "rhtas.charts.redhat.com/v1alpha1",
+          "kind": "PolicyController",
+          "metadata": {
+            "name": "policycontroller-sample"
+          },
+          "spec": {
+            "commonAnnotations": {},
+            "commonNodeSelector": {},
+            "commonTolerations": [],
+            "cosign": {
+              "cosignPub": "",
+              "webhookName": "policy.sigstore.dev",
+              "webhookTimeoutSeconds": {}
+            },
+            "imagePullSecrets": [],
+            "installCRDs": true,
+            "leasescleanup": {
+              "automountServiceAccountToken": true,
+              "image": {
+                "pullPolicy": "IfNotPresent",
+                "repository": "cgr.dev/chainguard/kubectl",
+                "version": "latest-dev"
+              },
+              "podSecurityContext": {
+                "enabled": false
+              },
+              "priorityClass": "",
+              "resources": {
+                "limits": {
+                  "cpu": "",
+                  "memory": ""
+                },
+                "requests": {
+                  "cpu": "",
+                  "memory": ""
+                }
+              }
+            },
+            "loglevel": "info",
+            "serviceMonitor": {
+              "enabled": false
+            },
+            "webhook": {
+              "affinity": {},
+              "automountServiceAccountToken": true,
+              "configData": {},
+              "customLabels": {},
+              "env": {},
+              "envFrom": {},
+              "extraArgs": {},
+              "failurePolicy": "Fail",
+              "name": "webhook",
+              "namespaceSelector": {
+                "matchExpressions": [
+                  {
+                    "key": "policy.sigstore.dev/include",
+                    "operator": "In",
+                    "values": [
+                      "true"
+                    ]
+                  }
+                ]
+              },
+              "podAnnotations": {},
+              "podDisruptionBudget": {
+                "enabled": true,
+                "minAvailable": 1
+              },
+              "priorityClass": "",
+              "registryCaBundle": {},
+              "replicaCount": 1,
+              "resources": {
+                "limits": {
+                  "cpu": "200m",
+                  "memory": "512Mi"
+                },
+                "requests": {
+                  "cpu": "100m",
+                  "memory": "128Mi"
+                }
+              },
+              "service": {
+                "annotations": {},
+                "port": 443,
+                "type": "ClusterIP"
+              },
+              "serviceAccount": {
+                "annotations": {},
+                "create": true,
+                "name": ""
+              },
+              "volumeMounts": [],
+              "volumes": [],
+              "webhookNames": {
+                "defaulting": "defaulting.clusterimagepolicy.sigstore.dev",
+                "validating": "validating.clusterimagepolicy.sigstore.dev"
+              },
+              "webhookTimeoutSeconds": {}
+            }
+          }
+        }
+      ]
     capabilities: Basic Install
-    createdAt: "2025-05-08T11:56:17Z"
+    createdAt: "2025-05-13T11:07:38Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: PolicyController
+      name: policycontrollers.rhtas.charts.redhat.com
+      version: v1alpha1
   description: rhtas-policy-controller
   displayName: rhtas-policy-controller
   icon:
@@ -19,7 +127,192 @@ spec:
     mediatype: ""
   install:
     spec:
-      deployments: []
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+        - apiGroups:
+          - rhtas.charts.redhat.com
+          resources:
+          - policycontrollers
+          - policycontrollers/status
+          - policycontrollers/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apiextensions.k8s.io
+          resources:
+          - customresourcedefinitions
+          verbs:
+          - '*'
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          - clusterroles
+          verbs:
+          - '*'
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - mutatingwebhookconfigurations
+          - validatingwebhookconfigurations
+          verbs:
+          - '*'
+        - apiGroups:
+          - policy
+          resources:
+          - poddisruptionbudgets
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - services
+          verbs:
+          - '*'
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - '*'
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: policy-controller-operator-controller-manager
+      deployments:
+      - label:
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/name: policy-controller-operator
+          control-plane: controller-manager
+        name: policy-controller-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --metrics-require-rbac
+                - --metrics-secure
+                - --metrics-bind-address=:8443
+                - --leader-elect
+                - --leader-election-id=policy-controller-operator
+                - --health-probe-bind-address=:8081
+                image: controller:latest
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+              securityContext:
+                runAsNonRoot: true
+              serviceAccountName: policy-controller-operator-controller-manager
+              terminationGracePeriodSeconds: 10
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: policy-controller-operator-controller-manager
     strategy: deployment
   installModes:
   - supported: true

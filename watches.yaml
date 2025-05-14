@@ -2,5 +2,5 @@
 - group: rhtas.charts.redhat.com
   version: v1alpha1
   kind: PolicyController
-  chart: helm-charts/policy-controller
+  chart: helm-charts/policy-controller-operator
 # +kubebuilder:scaffold:watch
