@@ -115,7 +115,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-15T10:49:08Z"
+    createdAt: "2025-05-15T11:02:14Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
