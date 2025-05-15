@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: policy-controller-operator
     control-plane: controller-manager
-  name: policy-controller-operator-controller-manager-metrics-service
+  name: policy-op-controller-manager-metrics-service
 spec:
   ports:
   - name: https

@@ -63,7 +63,8 @@ policy-controller:
       create: true
       name: ""
     service:
-      annotations: {}
+      annotations: 
+        helm.sh/resource-policy: keep
       type: ClusterIP
       port: 443
       # For nodeport, specify the following:

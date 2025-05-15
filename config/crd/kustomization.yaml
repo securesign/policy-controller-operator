@@ -3,4 +3,6 @@
 # It should be run by config/default
 resources:
 - bases/rhtas.charts.redhat.com_policycontrollers.yaml
+- bases/rhtas.charts.redhat.com_clusterimagepolicy.yaml
+- bases/rhtas.charts.redhat.com_trustroots.yaml
 # +kubebuilder:scaffold:crdkustomizeresource

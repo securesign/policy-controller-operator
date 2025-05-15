@@ -8,7 +8,8 @@ metadata:
           "apiVersion": "rhtas.charts.redhat.com/v1alpha1",
           "kind": "PolicyController",
           "metadata": {
-            "name": "policycontroller-sample"
+            "name": "policycontroller-sample",
+            "namespace": "policy-controller-operator"
           },
           "spec": {
             "policy-controller": {
@@ -114,7 +115,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-14T07:30:15Z"
+    createdAt: "2025-05-15T11:02:14Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
@@ -123,8 +124,17 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
+    - kind: ClusterImagePolicy
+      name: clusterimagepolicies.policy.sigstore.dev
+      version: v1alpha1
+    - kind: ClusterImagePolicy
+      name: clusterimagepolicies.policy.sigstore.dev
+      version: v1beta1
     - kind: PolicyController
       name: policycontrollers.rhtas.charts.redhat.com
+      version: v1alpha1
+    - kind: TrustRoot
+      name: trustroots.policy.sigstore.dev
       version: v1alpha1
   description: rhtas-policy-controller
   displayName: rhtas-policy-controller
@@ -168,12 +178,6 @@ spec:
           - update
           - watch
         - apiGroups:
-          - apiextensions.k8s.io
-          resources:
-          - customresourcedefinitions
-          verbs:
-          - '*'
-        - apiGroups:
           - rbac.authorization.k8s.io
           resources:
           - clusterrolebindings
@@ -185,6 +189,8 @@ spec:
           resources:
           - mutatingwebhookconfigurations
           - validatingwebhookconfigurations
+          - validatingadmissionpolicies
+          - validatingadmissionpolicybindings
           verbs:
           - '*'
         - apiGroups:
@@ -227,13 +233,13 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
-        serviceAccountName: policy-controller-operator-controller-manager
+        serviceAccountName: policy-op-controller-manager
       deployments:
       - label:
           app.kubernetes.io/managed-by: kustomize
           app.kubernetes.io/name: policy-controller-operator
           control-plane: controller-manager
-        name: policy-controller-operator-controller-manager
+        name: policy-op-controller-manager
         spec:
           replicas: 1
           selector:
@@ -283,7 +289,7 @@ spec:
                     - ALL
               securityContext:
                 runAsNonRoot: true
-              serviceAccountName: policy-controller-operator-controller-manager
+              serviceAccountName: policy-op-controller-manager
               terminationGracePeriodSeconds: 10
       permissions:
       - rules:
@@ -318,7 +324,7 @@ spec:
           verbs:
           - create
           - patch
-        serviceAccountName: policy-controller-operator-controller-manager
+        serviceAccountName: policy-op-controller-manager
     strategy: deployment
   installModes:
   - supported: true

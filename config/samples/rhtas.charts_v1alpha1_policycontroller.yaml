@@ -2,6 +2,7 @@ apiVersion: rhtas.charts.redhat.com/v1alpha1
 kind: PolicyController
 metadata:
   name: policycontroller-sample
+  namespace: policy-controller-operator
 spec:
   policy-controller:
     # Default values copied from <project_dir>/helm-charts/policy-controller/values.yaml
