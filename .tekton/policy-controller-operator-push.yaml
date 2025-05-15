@@ -23,7 +23,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rhtas-tenant/policy-controller-operator:{{revision}}
+    value: quay.io/securesign/policy-controller-operator:{{revision}}
   - name: dockerfile
     value: Dockerfile
   - name: hermetic
