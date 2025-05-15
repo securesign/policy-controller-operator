@@ -8,7 +8,8 @@ metadata:
           "apiVersion": "rhtas.charts.redhat.com/v1alpha1",
           "kind": "PolicyController",
           "metadata": {
-            "name": "policycontroller-sample"
+            "name": "policycontroller-sample",
+            "namespace": "policy-controller-operator"
           },
           "spec": {
             "policy-controller": {
@@ -114,7 +115,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-14T13:40:47Z"
+    createdAt: "2025-05-15T10:49:08Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
@@ -188,6 +189,8 @@ spec:
           resources:
           - mutatingwebhookconfigurations
           - validatingwebhookconfigurations
+          - validatingadmissionpolicies
+          - validatingadmissionpolicybindings
           verbs:
           - '*'
         - apiGroups:
