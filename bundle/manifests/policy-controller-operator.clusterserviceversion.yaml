@@ -11,104 +11,110 @@ metadata:
             "name": "policycontroller-sample"
           },
           "spec": {
-            "commonAnnotations": {},
-            "commonNodeSelector": {},
-            "commonTolerations": [],
-            "cosign": {
-              "cosignPub": "",
-              "webhookName": "policy.sigstore.dev",
-              "webhookTimeoutSeconds": {}
-            },
-            "imagePullSecrets": [],
-            "installCRDs": true,
-            "leasescleanup": {
-              "automountServiceAccountToken": true,
-              "image": {
-                "pullPolicy": "IfNotPresent",
-                "repository": "cgr.dev/chainguard/kubectl",
-                "version": "latest-dev"
+            "policy-controller": {
+              "commonAnnotations": {},
+              "commonNodeSelector": {},
+              "commonTolerations": [],
+              "cosign": {
+                "cosignPub": "",
+                "webhookName": "policy.rhtas.com",
+                "webhookTimeoutSeconds": {}
               },
-              "podSecurityContext": {
+              "imagePullSecrets": [],
+              "installCRDs": true,
+              "leasescleanup": {
+                "automountServiceAccountToken": true,
+                "image": {
+                  "pullPolicy": "IfNotPresent",
+                  "repository": "cgr.dev/chainguard/kubectl",
+                  "version": "latest-dev"
+                },
+                "podSecurityContext": {
+                  "enabled": false
+                },
+                "priorityClass": "",
+                "resources": {
+                  "limits": {
+                    "cpu": "",
+                    "memory": ""
+                  },
+                  "requests": {
+                    "cpu": "",
+                    "memory": ""
+                  }
+                }
+              },
+              "loglevel": "info",
+              "serviceMonitor": {
                 "enabled": false
               },
-              "priorityClass": "",
-              "resources": {
-                "limits": {
-                  "cpu": "",
-                  "memory": ""
+              "webhook": {
+                "affinity": {},
+                "automountServiceAccountToken": true,
+                "configData": {},
+                "customLabels": {},
+                "env": {},
+                "envFrom": {},
+                "extraArgs": {
+                  "mutating-webhook-name": "defaulting.clusterimagepolicy.rhtas.com",
+                  "validating-webhook-name": "validating.clusterimagepolicy.rhtas.com",
+                  "webhook-name": "policy.rhtas.com"
                 },
-                "requests": {
-                  "cpu": "",
-                  "memory": ""
-                }
-              }
-            },
-            "loglevel": "info",
-            "serviceMonitor": {
-              "enabled": false
-            },
-            "webhook": {
-              "affinity": {},
-              "automountServiceAccountToken": true,
-              "configData": {},
-              "customLabels": {},
-              "env": {},
-              "envFrom": {},
-              "extraArgs": {},
-              "failurePolicy": "Fail",
-              "name": "webhook",
-              "namespaceSelector": {
-                "matchExpressions": [
-                  {
-                    "key": "policy.sigstore.dev/include",
-                    "operator": "In",
-                    "values": [
-                      "true"
-                    ]
+                "failurePolicy": "Fail",
+                "name": "webhook",
+                "namespaceSelector": {
+                  "matchExpressions": [
+                    {
+                      "key": "policy.rhtas.com/include",
+                      "operator": "In",
+                      "values": [
+                        "true"
+                      ]
+                    }
+                  ]
+                },
+                "podAnnotations": {},
+                "podDisruptionBudget": {
+                  "enabled": true,
+                  "minAvailable": 1
+                },
+                "priorityClass": "",
+                "registryCaBundle": {},
+                "replicaCount": 1,
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
                   }
-                ]
-              },
-              "podAnnotations": {},
-              "podDisruptionBudget": {
-                "enabled": true,
-                "minAvailable": 1
-              },
-              "priorityClass": "",
-              "registryCaBundle": {},
-              "replicaCount": 1,
-              "resources": {
-                "limits": {
-                  "cpu": "200m",
-                  "memory": "512Mi"
                 },
-                "requests": {
-                  "cpu": "100m",
-                  "memory": "128Mi"
-                }
-              },
-              "service": {
-                "annotations": {},
-                "port": 443,
-                "type": "ClusterIP"
-              },
-              "serviceAccount": {
-                "annotations": {},
-                "create": true,
-                "name": ""
-              },
-              "volumeMounts": [],
-              "volumes": [],
-              "webhookNames": {
-                "defaulting": "defaulting.clusterimagepolicy.sigstore.dev",
-                "validating": "validating.clusterimagepolicy.sigstore.dev"
-              },
-              "webhookTimeoutSeconds": {}
+                "service": {
+                  "annotations": {},
+                  "port": 443,
+                  "type": "ClusterIP"
+                },
+                "serviceAccount": {
+                  "annotations": {},
+                  "create": true,
+                  "name": ""
+                },
+                "volumeMounts": [],
+                "volumes": [],
+                "webhookNames": {
+                  "defaulting": "defaulting.clusterimagepolicy.rhtas.com",
+                  "validating": "validating.clusterimagepolicy.rhtas.com"
+                },
+                "webhookTimeoutSeconds": {}
+              }
             }
           }
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-13T11:07:38Z"
+    createdAt: "2025-05-14T07:30:15Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: policy-controller-operator.v0.0.1
@@ -249,7 +255,7 @@ spec:
                 - --leader-elect
                 - --leader-election-id=policy-controller-operator
                 - --health-probe-bind-address=:8081
-                image: controller:latest
+                image: img:latest
                 livenessProbe:
                   httpGet:
                     path: /healthz
