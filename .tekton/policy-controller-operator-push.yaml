@@ -26,6 +26,10 @@ spec:
     value: quay.io/redhat-user-workloads/rhtas-tenant/policy-controller-operator:{{revision}}
   - name: dockerfile
     value: Dockerfile
+  - name: hermetic
+    value: "true"
+  - name: build-source-image
+    value: "true"
   pipelineRef:
     params:
     - name: url
