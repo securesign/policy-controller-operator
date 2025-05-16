@@ -251,3 +251,8 @@ catalog-push: ## Push a catalog image.
 .PHONY: unit-test
 unit-test:
 	cd cmd && go test -count=1 ./...
+
+.PHONY: e2e-test
+e2e-test:
+	cd test && go test -count=1 -v ./e2e
+
