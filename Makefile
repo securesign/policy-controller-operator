@@ -231,3 +231,9 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+# Testing
+.PHONY: e2e-test
+e2e-test:
+	cd test && go test -count=1 -v ./e2e
+
