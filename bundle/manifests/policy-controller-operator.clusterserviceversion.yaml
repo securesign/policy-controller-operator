@@ -114,9 +114,23 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-14T07:30:15Z"
+    containerImage: placeholder
+    createdAt: "2025-05-16T07:56:27Z"
+    features.operators.openshift.io/cnf: "false"
+    features.operators.openshift.io/cni: "false"
+    features.operators.openshift.io/csi: "false"
+    features.operators.openshift.io/disconnected: "false"
+    features.operators.openshift.io/fips-compliant: "false"
+    features.operators.openshift.io/proxy-aware: "false"
+    features.operators.openshift.io/tls-profiles: "false"
+    features.operators.openshift.io/token-auth-aws: "false"
+    features.operators.openshift.io/token-auth-azure: "false"
+    features.operators.openshift.io/token-auth-gcp: "false"
+    operators.openshift.io/valid-subscription: '["Red Hat Trusted Artifact Signer"]'
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
+    repository: https://github.com/securesign/policy-controller-operator
+    support: Red Hat
   name: policy-controller-operator.v0.0.1
   namespace: placeholder
 spec:
@@ -126,8 +140,8 @@ spec:
     - kind: PolicyController
       name: policycontrollers.rhtas.charts.redhat.com
       version: v1alpha1
-  description: rhtas-policy-controller
-  displayName: rhtas-policy-controller
+  description: policy-controller-operator
+  displayName: policy-controller-operator
   icon:
   - base64data: ""
     mediatype: ""
@@ -330,11 +344,13 @@ spec:
   - supported: true
     type: AllNamespaces
   keywords:
-  - test
-  - test1
+  - security
+  - rhtas
+  - trust
+  - admissions controller
   links:
   - name: Policy Controller Operator
-    url: https://policy-controller-operator.domain
+    url: https://github.com/securesign/policy-controller-operator
   maintainers:
   - email: japower@redhat.com
     name: Jason Power
