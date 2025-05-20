@@ -1,0 +1,71 @@
+apiVersion: rhtas.redhat.com/v1alpha1
+kind: Securesign
+metadata:
+  labels:
+    app.kubernetes.io/name: securesign-sample
+    app.kubernetes.io/instance: securesign-sample
+    app.kubernetes.io/part-of: trusted-artifact-signer
+  annotations:
+    rhtas.redhat.com/metrics: "false"
+  name: securesign-sample
+spec:
+  rekor:
+    externalAccess:
+      enabled: true
+    monitoring:
+      enabled: true
+  trillian:
+    database:
+      create: true
+  fulcio:
+    externalAccess:
+      enabled: true
+    config:
+      OIDCIssuers:
+        - ClientID: "trusted-artifact-signer"
+          IssuerURL: "http://keycloak-internal.keycloak-system.svc/auth/realms/trusted-artifact-signer"
+          Issuer: "http://keycloak-internal.keycloak-system.svc/auth/realms/trusted-artifact-signer"
+          Type: "email"
+    certificate:
+      organizationName: Red Hat
+      organizationEmail: jdoe@redhat.com
+      commonName: fulcio.hostname
+    monitoring:
+      enabled: true
+  tuf:
+    externalAccess:
+      enabled: true
+    keys:
+      - name: rekor.pub
+      - name: ctfe.pub
+      - name: fulcio_v1.crt.pem
+      - name: tsa.certchain.pem
+    rootKeySecretRef:
+      name: tuf-root-keys
+    pvc:
+      accessModes:
+        - ReadWriteOnce
+      retain: true
+      size: 100Mi
+  ctlog:
+  tsa:
+    externalAccess:
+      enabled: true
+    monitoring:
+      enabled: true
+    ntpMonitoring:
+      enabled: true
+    signer:
+      certificateChain:
+        rootCA:
+          organizationName: Red Hat
+          organizationEmail: jdoe@redhat.com
+          commonName: tsa.hostname
+        intermediateCA:
+          - organizationName: Red Hat
+            organizationEmail: jdoe@redhat.com
+            commonName: tsa.hostname
+        leafCA:
+          organizationName: Red Hat
+          organizationEmail: jdoe@redhat.com
+          commonName: tsa.hostname

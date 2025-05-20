@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"text/template"
 
 	. "github.com/onsi/gomega"
@@ -19,6 +20,7 @@ const (
 	rekorEnv        = "REKOR_URL"
 
 	testImageEnv = "TEST_IMAGE"
+	ciEnv        = "CI"
 )
 
 func EnvOrDefault(env string, defualt string) string {
@@ -41,10 +43,17 @@ func TestImage() string {
 	return EnvOrDefault(testImageEnv, "")
 }
 
+func IsCI() bool {
+	ci := EnvOrDefault(ciEnv, "true")
+	val, err := strconv.ParseBool(ci)
+	Expect(err).ToNot(HaveOccurred())
+	return val
+}
+
 func ExpectExists(name, namespace string, obj client.Object, k8sClient client.Client, ctx context.Context) {
 	Eventually(func() error {
 		return k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, obj)
-	}, "10s", "1s").Should(Succeed(), "expected %T %q to exist", obj, name)
+	}).Should(Succeed(), "expected %T %q to exist", obj, name)
 }
 
 func VerifyByCosign(ctx context.Context, targetImageName string) {
@@ -52,7 +61,7 @@ func VerifyByCosign(ctx context.Context, targetImageName string) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(oidcToken).ToNot(BeEmpty())
 
-	Expect(Execute("cosign", "initialize", "--mirror="+TufUrl(), "--root="+TufUrl()+"/root.json")).To(Succeed())
+	Expect(Execute("cosign", "initialize", "--mirror="+TufExternalUrl(), "--root="+TufExternalUrl()+"/root.json")).To(Succeed())
 	Expect(Execute("cosign", "sign", "-y", "--fulcio-url="+FulcioUrl(), "--rekor-url="+RekorUrl(), "--oidc-issuer="+OidcIssuerUrl(), "--oidc-client-id="+OidcClientID(), "--identity-token="+oidcToken, targetImageName)).To(Succeed())
 	Expect(Execute("cosign", "verify", "--rekor-url="+RekorUrl(), "--certificate-identity-regexp", ".*@redhat", "--certificate-oidc-issuer-regexp", ".*keycloak.*", targetImageName)).To(Succeed())
 }

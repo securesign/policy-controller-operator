@@ -54,12 +54,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	ctx = context.Background()
 
 	fmt.Println(">>> Running tests with the following parameters:")
-	fmt.Printf("  %-22s %s\n", "TUF URL:", e2e_utils.TufUrl())
+	fmt.Printf("  %-22s %s\n", "TUF EXTERNAL URL:", e2e_utils.TufExternalUrl())
+	fmt.Printf("  %-22s %s\n", "TUF INTERNAL URL:", e2e_utils.TufInternalUrl())
 	fmt.Printf("  %-22s %s\n", "Rekor URL:", e2e_utils.RekorUrl())
 	fmt.Printf("  %-22s %s\n", "Fulcio URL:", e2e_utils.FulcioUrl())
 	fmt.Printf("  %-22s %s\n", "OIDC Issuer URL:", e2e_utils.OidcIssuerUrl())
 	fmt.Printf("  %-22s %s\n", "OIDC Issuer Subject:", e2e_utils.OidcIssuerSubject())
 	fmt.Printf("  %-22s %s\n", "Test Image:", e2e_utils.TestImage())
+	fmt.Printf("  %-22s %v\n", "CI:", e2e_utils.IsCI())
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {

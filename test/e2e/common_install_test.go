@@ -109,12 +109,31 @@ var _ = Describe("policy-controller-operator installation", Ordered, func() {
 		}).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, deploymentName)
 	})
 
+	It("eventually populates the webhook-certs Secret with TLS keys", func() {
+		secret := &corev1.Secret{}
+		e2e_utils.ExpectExists(secretName, installNamespace, secret, k8sClient, ctx)
+
+		Eventually(func(g Gomega) bool {
+			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: installNamespace, Name: secretName}, secret)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			required := []string{"ca-cert.pem", "server-cert.pem", "server-key.pem"}
+			for _, k := range required {
+				if len(secret.Data[k]) == 0 {
+					return false
+				}
+			}
+
+			return true
+		}).Should(BeTrue(), "timed out waiting for TLS keys to appear in Secret %q", secretName)
+	})
+
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func() {
 		encodedRoot, err := e2e_utils.ResolveBase64TufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		renderedTrustRoot, err = e2e_utils.RenderTemplate(trustRootCrABSPath, map[string]string{
-			"TUFMirror": e2e_utils.TufUrl(),
+			"TUFMirror": e2e_utils.TufUrl(e2e_utils.IsCI()),
 			"TUFRoot":   encodedRoot,
 		})
 		Expect(err).NotTo(HaveOccurred())
