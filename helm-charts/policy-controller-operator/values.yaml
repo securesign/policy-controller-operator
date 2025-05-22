@@ -30,7 +30,11 @@ policy-controller:
       # secrets:
       #   - mys1
       #   - mys2
-    extraArgs: {}
+    extraArgs:
+      webhook-name: policy.rhtas.com
+      mutating-webhook-name: defaulting.clusterimagepolicy.rhtas.com
+      validating-webhook-name: validating.clusterimagepolicy.rhtas.com
+      disable-tuf: true
     resources:
       limits:
         cpu: 200m

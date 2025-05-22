@@ -5,57 +5,62 @@ metadata:
     alm-examples: |-
       [
         {
+          "apiVersion": "policy.sigstore.dev/v1alpha1",
+          "kind": "TrustRoot",
+          "metadata": {
+            "name": "trust-root"
+          },
+          "spec": {
+            "remote": {
+              "mirror": "https://tuf.example.com",
+              "root": "\u003cbase64 encode trust root\u003e"
+            }
+          }
+        },
+        {
+          "apiVersion": "policy.sigstore.dev/v1beta1",
+          "kind": "ClusterImagePolicy",
+          "metadata": {
+            "name": "cluster-image-policy"
+          },
+          "spec": {
+            "authorities": [
+              {
+                "ctlog": {
+                  "trustRootRef": "trust-root-ref",
+                  "url": "https://rekor.example.com"
+                },
+                "keyless": {
+                  "identities": [
+                    {
+                      "issuer": "https://oidc.example.com",
+                      "subject": "oidc-issuer-subject"
+                    }
+                  ],
+                  "trustRootRef": "trust-root-ref",
+                  "url": "https://fulcio.example.com"
+                }
+              }
+            ],
+            "images": [
+              {
+                "glob": "**"
+              }
+            ]
+          }
+        },
+        {
           "apiVersion": "rhtas.charts.redhat.com/v1alpha1",
           "kind": "PolicyController",
           "metadata": {
-            "name": "policycontroller-sample",
-            "namespace": "policy-controller-operator"
+            "name": "policycontroller-sample"
           },
           "spec": {
             "policy-controller": {
-              "commonAnnotations": {},
-              "commonNodeSelector": {},
-              "commonTolerations": [],
               "cosign": {
-                "cosignPub": "",
-                "webhookName": "policy.rhtas.com",
-                "webhookTimeoutSeconds": {}
-              },
-              "imagePullSecrets": [],
-              "installCRDs": true,
-              "leasescleanup": {
-                "automountServiceAccountToken": true,
-                "image": {
-                  "pullPolicy": "IfNotPresent",
-                  "repository": "cgr.dev/chainguard/kubectl",
-                  "version": "latest-dev"
-                },
-                "podSecurityContext": {
-                  "enabled": false
-                },
-                "priorityClass": "",
-                "resources": {
-                  "limits": {
-                    "cpu": "",
-                    "memory": ""
-                  },
-                  "requests": {
-                    "cpu": "",
-                    "memory": ""
-                  }
-                }
-              },
-              "loglevel": "info",
-              "serviceMonitor": {
-                "enabled": false
+                "webhookName": "policy.rhtas.com"
               },
               "webhook": {
-                "affinity": {},
-                "automountServiceAccountToken": true,
-                "configData": {},
-                "customLabels": {},
-                "env": {},
-                "envFrom": {},
                 "extraArgs": {
                   "mutating-webhook-name": "defaulting.clusterimagepolicy.rhtas.com",
                   "validating-webhook-name": "validating.clusterimagepolicy.rhtas.com",
@@ -74,41 +79,10 @@ metadata:
                     }
                   ]
                 },
-                "podAnnotations": {},
-                "podDisruptionBudget": {
-                  "enabled": true,
-                  "minAvailable": 1
-                },
-                "priorityClass": "",
-                "registryCaBundle": {},
-                "replicaCount": 1,
-                "resources": {
-                  "limits": {
-                    "cpu": "200m",
-                    "memory": "512Mi"
-                  },
-                  "requests": {
-                    "cpu": "100m",
-                    "memory": "128Mi"
-                  }
-                },
-                "service": {
-                  "annotations": {},
-                  "port": 443,
-                  "type": "ClusterIP"
-                },
-                "serviceAccount": {
-                  "annotations": {},
-                  "create": true,
-                  "name": ""
-                },
-                "volumeMounts": [],
-                "volumes": [],
                 "webhookNames": {
                   "defaulting": "defaulting.clusterimagepolicy.rhtas.com",
                   "validating": "validating.clusterimagepolicy.rhtas.com"
-                },
-                "webhookTimeoutSeconds": {}
+                }
               }
             }
           }
@@ -116,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-05-16T07:56:27Z"
+    createdAt: "2025-05-28T07:36:48Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
