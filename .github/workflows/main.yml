@@ -1,0 +1,152 @@
+name: Validate Policy Controller Operator
+on:
+    workflow_dispatch:
+    push:
+      branches: [ "main", "release*" ]
+      tags: [ "*" ]
+    pull_request:
+      branches: [ "main", "release*" ]
+
+env:
+  IMG: ttl.sh/securesign/policy-controller-operator-${{github.run_number}}:1h
+  BUNDLE_IMG: ttl.sh/securesign/policy-controller-operator-bundle-${{github.run_number}}:1h
+  CATALOG_IMG: ttl.sh/securesign/policy-controller-operator-catalog-${{github.run_number}}:1h
+  TEST_IMAGE: ttl.sh/securesign/policy-controller-test-image-${{github.run_number}}:1h
+  SECURESIGN_CATALOG_IMAGE: quay.io/securesign/fbc-v4-18@sha256:ecdad8f88753cb0ce8c569f69fb38747563ffe018f75f5329a6e595be8894bc7
+  CONTAINER_TOOL: podman
+  GO_VERSION: 1.23.8
+  CI: "true"
+
+jobs:
+  build-operator:
+    name: Build-operator
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Log in to registry.redhat.io
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: registry.redhat.io
+          auth_file_path: /tmp/config.json
+
+      - name: Build operator container
+        run: make docker-build docker-push
+
+      - name: Save container image
+        run: podman save -o /tmp/operator-oci.tar --format oci-archive $IMG
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-image
+          path: /tmp/operator-oci.tar
+          retention-days: 1
+
+  build-bundle:
+    name: Build-bundle-image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build operator bundle
+        run: make LOCALBIN=${{ github.workspace }}/bin bundle bundle-build bundle-push
+
+      - name: Save container image
+        run: podman save -o /tmp/bundle-oci.tar --format oci-archive $BUNDLE_IMG
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-image
+          path: /tmp/bundle-oci.tar
+          retention-days: 1
+
+  run-e2e-test:
+    name: E2E
+    runs-on: ubuntu-24.04
+    needs:
+      - build-operator
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-image"
+          merge-multiple: true
+          path: /tmp
+
+      - name: Load images
+        run: podman load -i /tmp/operator-oci.tar
+
+      - name: Log in to registry.redhat.io
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: registry.redhat.io
+          auth_file_path: /tmp/config.json
+
+      - name: Install Cluster
+        uses: ./.github/actions/kind-cluster
+        with:
+          config: ./test/ci/config.yaml
+          prometheus: 'true'
+          keycloak: 'true'
+          olm: 'true'
+          securesign: 'true'
+
+      - name: Add service hosts to /etc/hosts
+        run: |
+            sudo echo "127.0.0.1 fulcio-server.local tuf.local rekor-server.local keycloak-internal.keycloak-system.svc rekor-search-ui.local cli-server.local tsa-server.local" | sudo tee -a /etc/hosts
+
+      - name: Build and push test image
+        run: |
+          ${{ env.CONTAINER_TOOL }} build -t ${{ env.TEST_IMAGE }} -f test/ci/Dockerfile test/ci
+          ${{ env.CONTAINER_TOOL }} push ${{ env.TEST_IMAGE }}
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+        
+      - name: Install cosign
+        run: go install github.com/sigstore/cosign/v2/cmd/cosign@v2.4.0
+
+      - name: Deploy operator container
+        run: make deploy
+
+      - name: Wait for operator to be ready
+        run: |
+          kubectl wait --for=condition=available deployment/policy-op-controller-manager --timeout=120s -n policy-controller-operator
+
+      - name: Run tests
+        id: e2e
+        run: |
+          make e2e-test
+        continue-on-error: true
+
+      - name: Dump operator namespace events
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          kubectl get events -n policy-controller-operator --sort-by=.lastTimestamp | tail -n20
+
+      - name: Dump controller logs
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          kubectl logs deployment/policy-op-controller-manager -n policy-controller-operator --container manager --tail=200
+
+      - name: Dump policy controller logs
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          kubectl logs deployment/policycontroller-sample-policy-controller-webhook -n policy-controller-operator --all-containers --tail=200
+
+      - name: Fail job if tests failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-rhtas-operator
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: rhtas-operator
+  namespace: olm
+spec:
+  sourceType: grpc
+  publisher: Red Hat
+  image: ${SECURESIGN_CATALOG_IMAGE}
+  displayName: TAS Operator
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: rhtas-operator-group
+  namespace: openshift-rhtas-operator
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: rhtas-operator-sub
+  namespace: openshift-rhtas-operator
+spec:
+  name:           rhtas-operator
+  channel:        stable
+  source:         rhtas-operator
+  sourceNamespace: olm
+  installPlanApproval: Automatic
+  config:
+    env:
+      - name: OPENSHIFT
+        value: "false"

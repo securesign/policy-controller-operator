@@ -1,0 +1,83 @@
+apiVersion: rhtas.charts.redhat.com/v1alpha1
+kind: PolicyController
+metadata:
+  name: policycontroller-sample
+  namespace: policy-controller-operator
+spec:
+  policy-controller:
+    commonAnnotations: {}
+    commonNodeSelector: {}
+    commonTolerations: []
+    cosign:
+      cosignPub: ""
+      webhookName: "policy.rhtas.com"
+      webhookTimeoutSeconds: {}
+    imagePullSecrets: []
+    installCRDs: true
+    leasescleanup:
+      automountServiceAccountToken: true
+      image:
+        pullPolicy: IfNotPresent
+        repository: cgr.dev/chainguard/kubectl
+        version: latest-dev
+      podSecurityContext:
+        enabled: false
+      priorityClass: ""
+      resources:
+        limits:
+          cpu: ""
+          memory: ""
+        requests:
+          cpu: ""
+          memory: ""
+    loglevel: info
+    serviceMonitor:
+      enabled: false
+    webhook:
+      affinity: {}
+      automountServiceAccountToken: true
+      configData: {}
+      customLabels: {}
+      env: {}
+      envFrom: {}
+      extraArgs:
+        webhook-name: policy.rhtas.com
+        mutating-webhook-name: defaulting.clusterimagepolicy.rhtas.com
+        validating-webhook-name: validating.clusterimagepolicy.rhtas.com
+        disable-tuf: true
+      failurePolicy: Fail
+      name: webhook
+      namespaceSelector:
+        matchExpressions:
+        - key: policy.rhtas.com/include
+          operator: In
+          values:
+          - "true"
+      podAnnotations: {}
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+      priorityClass: ""
+      registryCaBundle: {}
+      replicaCount: 1
+      resources:
+        limits:
+          cpu: 200m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      service:
+        annotations: {}
+        port: 443
+        type: ClusterIP
+      serviceAccount:
+        annotations: {}
+        create: true
+        name: ""
+      volumeMounts: []
+      volumes: []
+      webhookNames:
+        defaulting: "defaulting.clusterimagepolicy.rhtas.com"
+        validating: "validating.clusterimagepolicy.rhtas.com"
+      webhookTimeoutSeconds: {}
