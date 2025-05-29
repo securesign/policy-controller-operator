@@ -13,7 +13,7 @@ metadata:
           "spec": {
             "remote": {
               "mirror": "https://tuf.example.com",
-              "root": "\u003cbase64 encode trust root\u003e"
+              "root": "\u003cbase64 encode trust root\u003e\n"
             }
           }
         },
@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-05-28T07:36:48Z"
+    createdAt: "2025-06-03T14:41:07Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -275,10 +275,27 @@ spec:
                   capabilities:
                     drop:
                     - ALL
+              - command:
+                - admission-webhook-controller
+                image: img:latest
+                name: admission-webhook-controller
+                ports:
+                - containerPort: 9443
+                  name: https-webhook
+                  protocol: TCP
+                resources: {}
+                volumeMounts:
+                - mountPath: /tmp/k8s-webhook-server/serving-certs
+                  name: cert
+                  readOnly: true
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: policy-op-controller-manager
               terminationGracePeriodSeconds: 10
+              volumes:
+              - name: cert
+                secret:
+                  secretName: webhook-cert
       permissions:
       - rules:
         - apiGroups:
@@ -338,3 +355,25 @@ spec:
   provider:
     name: Red Hat
   version: 0.0.1
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: policy-op-controller-manager
+    failurePolicy: Fail
+    generateName: validation.policycontrollers.rhtas.charts.redhat.com
+    matchPolicy: Equivalent
+    rules:
+    - apiGroups:
+      - rhtas.charts.redhat.com
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - policycontrollers
+    sideEffects: None
+    targetPort: 9443
+    timeoutSeconds: 5
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate

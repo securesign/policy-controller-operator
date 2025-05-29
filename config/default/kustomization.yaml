@@ -27,6 +27,8 @@ resources:
 # Only CR(s) which requires webhooks and are applied on namespaces labeled with 'webhooks: enabled' will
 # be able to communicate with the Webhook Server.
 #- ../network-policy
+# [Webhook]
+- ../webhook
 
 # Uncomment the patches line if you enable Metrics, and/or are using webhooks and cert-manager
 patches:
