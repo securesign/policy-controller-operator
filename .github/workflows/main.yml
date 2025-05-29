@@ -1,0 +1,27 @@
+name: Validate Policy Controller Operator
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "release*" ]
+    tags: [ "*" ]
+  pull_request:
+    branches: [ "main", "release*" ]
+
+env:
+  GO_VERSION: 1.23.6
+
+jobs:
+  run-unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run Unit tests
+        run: make unit-test
