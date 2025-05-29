@@ -1,0 +1,31 @@
+apiVersion: v1
+data:
+  validating-policy.yaml: |
+    apiVersion: admissionregistration.k8s.io/v1
+    kind: ValidatingAdmissionPolicy
+    metadata:
+      name: policycontroller-namespace-lock
+    spec:
+      failurePolicy: Fail
+      matchConstraints:
+        resourceRules:
+        - apiGroups: ["rhtas.charts.redhat.com"]
+          apiVersions: ["v1alpha1"]
+          resources: ["policycontrollers"]
+          operations: ["CREATE","UPDATE"]
+      validations:
+      - expression: "request.namespace == 'policy-controller-operator'"
+        message: "PolicyController resources may only be created in the policy-controller-operator namespace."
+    ---
+    apiVersion: admissionregistration.k8s.io/v1
+    kind: ValidatingAdmissionPolicyBinding
+    metadata:
+      name: policycontroller-namespace-lock
+    spec:
+      policyName: policycontroller-namespace-lock
+      validationActions: [Deny]
+      matchResources:
+        namespaceSelector: {}
+kind: ConfigMap
+metadata:
+  name: policy-op-policycontroller-vap

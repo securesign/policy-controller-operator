@@ -116,7 +116,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-05-16T07:56:27Z"
+    createdAt: "2025-05-29T08:19:32Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -301,10 +301,27 @@ spec:
                   capabilities:
                     drop:
                     - ALL
+              initContainers:
+              - args:
+                - apply
+                - -f
+                - /vap/validating-policy.yaml
+                command:
+                - kubectl
+                image: registry.k8s.io/kubectl:v1.30.0
+                name: apply-vap
+                resources: {}
+                volumeMounts:
+                - mountPath: /vap
+                  name: vap-yaml
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: policy-op-controller-manager
               terminationGracePeriodSeconds: 10
+              volumes:
+              - configMap:
+                  name: policy-op-policycontroller-vap
+                name: vap-yaml
       permissions:
       - rules:
         - apiGroups:
