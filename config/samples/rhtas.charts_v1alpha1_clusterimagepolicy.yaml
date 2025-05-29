@@ -1,0 +1,17 @@
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: cluster-image-policy
+spec:
+  images:
+    - glob: "**"
+  authorities:
+    - keyless:
+        url: https://fulcio.example.com
+        trustRootRef: trust-root-ref
+        identities:
+          - issuer: https://oidc.example.com
+            subject: oidc-issuer-subject
+      ctlog:
+        url: https://rekor.example.com
+        trustRootRef: trust-root-ref

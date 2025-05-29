@@ -1,0 +1,9 @@
+apiVersion: policy.sigstore.dev/v1alpha1
+kind: TrustRoot
+metadata:
+  name: trust-root
+spec:
+  remote:
+    mirror: https://tuf.example.com
+    root: | 
+      <base64 encode trust root>

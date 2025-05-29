@@ -1,4 +1,6 @@
 ## Append samples of your project ##
 resources:
 - rhtas.charts_v1alpha1_policycontroller.yaml
+- rhtas.charts_v1alpha1_clusterimagepolicy.yaml
+- rhtas.charts_v1alpha1_trustroot.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
