@@ -4,6 +4,7 @@ WORKDIR /opt/app-root/src/
 USER root
 
 COPY go.mod go.mod
+COPY go.sum go.sum
 COPY cmd cmd
 
 RUN go build -mod=mod -o admission-webhook-controller ./cmd
