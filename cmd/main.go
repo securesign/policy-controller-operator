@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -67,4 +68,7 @@ func main() {
 		entryLog.Error(err, "unable to run manager")
 		os.Exit(1)
 	}
+
+	<-idleConnsClosed
+	log.Info().Msg("Server shutdown complete")
 }
