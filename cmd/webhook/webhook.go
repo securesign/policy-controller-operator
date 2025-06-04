@@ -69,6 +69,12 @@ func serve(w http.ResponseWriter, r *http.Request, admit func(admission.Admissio
 		return
 	}
 
+	if requestedAdmissionReview.Request == nil {
+		log.Error().Msg("AdmissionReview.Request is nil")
+		http.Error(w, "AdmissionReview.Request is nil", http.StatusBadRequest)
+		return
+	}
+
 	responseAdmissionReview := &admission.AdmissionReview{}
 	responseAdmissionReview.SetGroupVersionKind(*gvk)
 	responseAdmissionReview.Response = admit(*requestedAdmissionReview)
@@ -87,6 +93,12 @@ func ServeValidate(w http.ResponseWriter, r *http.Request) {
 
 func Validate(ar admission.AdmissionReview) *admission.AdmissionResponse {
 	log.Info().Msgf("validating policy controller resource")
+
+	if ar.Request == nil {
+		log.Error().Msg("AdmissionReview.Request is nil")
+		return &admission.AdmissionResponse{Allowed: false}
+	}
+
 	expectedRes := metav1.GroupVersionResource{
 		Group:    PolicyControllerGroup,
 		Version:  PolicyControllerVersion,
