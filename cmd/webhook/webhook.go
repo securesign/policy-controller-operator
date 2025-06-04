@@ -34,8 +34,13 @@ func init() {
 }
 
 func serve(w http.ResponseWriter, r *http.Request, admit func(admission.AdmissionReview) *admission.AdmissionResponse) {
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			log.Error().Err(closeErr).Msg("failed to close request body")
+		}
+	}()
+
 	data, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to read request body")
 		http.Error(w, "failed to read request body", http.StatusBadRequest)

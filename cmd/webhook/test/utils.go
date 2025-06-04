@@ -11,7 +11,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func generateAdmissionReviewResource(namespace string) admission.AdmissionReview {
+func generateAdmissionReviewResource(namespace string, unexpectedResource bool) admission.AdmissionReview {
+	if unexpectedResource {
+		return admission.AdmissionReview{
+			Request: &admission.AdmissionRequest{
+				Resource: metav1.GroupVersionResource{
+					Group:    "unexpected.group",
+					Version:  "v1",
+					Resource: "unexpectedresources",
+				},
+			},
+		}
+	}
+
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(
 		schema.GroupVersionKind{
@@ -24,6 +36,10 @@ func generateAdmissionReviewResource(namespace string) admission.AdmissionReview
 	raw, _ := json.Marshal(obj)
 
 	return admission.AdmissionReview{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "admission.k8s.io/v1",
+			Kind:       "AdmissionReview",
+		},
 		Request: &admission.AdmissionRequest{
 			UID: "12345",
 			Kind: metav1.GroupVersionKind{
