@@ -1,0 +1,13 @@
+resources:
+- ../default
+
+patches:
+- path: serving_cert_annotation_patch.yaml
+  target:
+    kind: Service
+    name: controller-manager-webhook-service
+
+- path: inject_ca_bundle_annotation_patch.yaml
+  target:
+    kind: ValidatingWebhookConfiguration
+    name: validation.policycontrollers.rhtas.charts.redhat.com
