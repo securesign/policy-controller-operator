@@ -59,6 +59,11 @@ IMG ?= img
 # tools. (i.e. podman)
 CONTAINER_TOOL ?= docker
 
+# OPENSHIFT - Boolean (true/false, default: true)
+#   true  - deploy with the OpenShift overlay in  config/openshift
+#   false - deploy with the generic Kubernetes overlay in config/deploy
+OPENSHIFT ?= true
+
 .PHONY: all
 all: docker-build
 
@@ -86,7 +91,11 @@ run: helm-operator ## Run against the configured Kubernetes cluster in ~/.kube/c
 	$(HELM_OPERATOR) run
 
 .PHONY: docker-build
-docker-build: ## Build docker image with the manager.
+docker-build: unit-test  ## Run tests then build docker image with the manager.
+	$(CONTAINER_TOOL) build -t ${IMG} .
+
+.PHONY: docker-build-skip-test
+docker-build-skip-test:  ## Build docker image with the manager.
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
 .PHONY: docker-push
@@ -117,10 +126,16 @@ install: kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/con
 uninstall: kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
+ifeq ($(OPENSHIFT),true)
+  DEPLOY_DIR := config/openshift
+else
+  DEPLOY_DIR := config/default
+endif
+
 .PHONY: deploy
 deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build $(DEPLOY_DIR) | kubectl apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
@@ -231,3 +246,8 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+## Testing
+.PHONY: unit-test
+unit-test:
+	cd cmd && go test -count=1 ./...
