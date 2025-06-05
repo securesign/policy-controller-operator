@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-06-04T14:23:36Z"
+    createdAt: "2025-06-05T08:57:16Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -177,8 +177,6 @@ spec:
           resources:
           - mutatingwebhookconfigurations
           - validatingwebhookconfigurations
-          - validatingadmissionpolicies
-          - validatingadmissionpolicybindings
           verbs:
           - '*'
         - apiGroups:

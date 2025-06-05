@@ -9,7 +9,7 @@ COPY cmd cmd
 RUN go build -mod=mod -o admission-webhook-controller ./cmd
 
 # Build the manager binary
-FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator@sha256:23c23ad0d341a91091da169951ecd475418e7798eb32917c6f032685c3e61f3b
+FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator@sha256:5c8061acfdfbb8a4b73beea0c662513d743a7b6fa4d28b11a99ade8e3f473bbf
 
 LABEL description="The image for the policy-controller-operator."
 LABEL io.k8s.description="The image for the policy-controller-operator."
