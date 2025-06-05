@@ -13,7 +13,7 @@ metadata:
           "spec": {
             "remote": {
               "mirror": "https://tuf.example.com",
-              "root": "\u003cbase64 encode trust root\u003e"
+              "root": "\u003cbase64 encode trust root\u003e\n"
             }
           }
         },
@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-05-28T07:36:48Z"
+    createdAt: "2025-06-05T08:57:16Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -177,8 +177,6 @@ spec:
           resources:
           - mutatingwebhookconfigurations
           - validatingwebhookconfigurations
-          - validatingadmissionpolicies
-          - validatingadmissionpolicybindings
           verbs:
           - '*'
         - apiGroups:
