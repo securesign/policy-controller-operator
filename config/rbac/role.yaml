@@ -59,8 +59,6 @@ rules:
   resources:
   - "mutatingwebhookconfigurations"
   - "validatingwebhookconfigurations"
-  - "validatingadmissionpolicies"
-  - "validatingadmissionpolicybindings"
 - verbs:
   - "*"
   apiGroups:
