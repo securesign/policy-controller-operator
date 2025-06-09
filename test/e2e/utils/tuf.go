@@ -10,7 +10,7 @@ import (
 
 const (
 	defaultTufMirror = "http://tuf.local"
-	tufMirrorEnv     = "TUF_MIRROR"
+	tufMirrorEnv     = "TUF_URL"
 )
 
 func TufUrl() string {

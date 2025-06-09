@@ -13,10 +13,10 @@ import (
 
 const (
 	defaultFulcioUrl = "http://fulcio-server.local"
-	fulcioEnv        = "FULCIO_URL"
+	fulcioEnv        = "COSIGN_FULCIO_URL"
 
 	defaultRekorUrl = "http://rekor-server.local"
-	rekorEnv        = "REKOR_URL"
+	rekorEnv        = "COSIGN_REKOR_URL"
 
 	testImageEnv = "TEST_IMAGE"
 )

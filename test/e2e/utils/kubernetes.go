@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -11,10 +13,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const (
+	defaultInjectCA = "false"
+	injectCA        = "INJECT_CA"
+)
+
+func InjectCA() string {
+	return EnvOrDefault(injectCA, defaultInjectCA)
+}
 
 func CreateTestPod(ctx context.Context, k8sClient client.Client, ns string) error {
 	pod := &corev1.Pod{
@@ -45,7 +58,7 @@ func CreateTestNamespace(ctx context.Context, k8sClient client.Client, name stri
 		},
 	}
 	err := k8sClient.Create(ctx, ns)
-	time.Sleep(20) //Allow time for the policy-controller to reconcile
+	time.Sleep(20 * time.Second) //Allow time for the policy-controller to reconcile
 	return err
 }
 
@@ -98,4 +111,91 @@ func DeleteResource(ctx context.Context, k8sClient client.Client, gvk schema.Gro
 			gvk.Kind, name, namespace, err)
 	}
 	return nil
+}
+
+func InjectCAIntoDeployment(ctx context.Context, k8sClient client.Client, deploymentName, namespace string) error {
+	inject, _ := strconv.ParseBool(strings.TrimSpace(InjectCA()))
+	if !inject {
+		return nil
+	}
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "trusted-ca-bundle",
+			Namespace: namespace,
+			Labels: map[string]string{
+				"config.openshift.io/inject-trusted-cabundle": "true",
+			},
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, k8sClient, cm, func() error {
+		if cm.Data == nil {
+			cm.Data = map[string]string{}
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("ensuring trusted CA ConfigMap: %w", err)
+	}
+
+	var deploy appsv1.Deployment
+	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: deploymentName}, &deploy); err != nil {
+		return err
+	}
+
+	ensureVolume(&deploy, corev1.Volume{
+		Name: "trusted-ca",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "trusted-ca-bundle"},
+				Items: []corev1.KeyToPath{
+					{Key: "ca-bundle.crt", Path: "ca-bundle.crt"},
+				},
+			},
+		},
+	})
+
+	for i := range deploy.Spec.Template.Spec.Containers {
+		ensureMount(&deploy.Spec.Template.Spec.Containers[i], corev1.VolumeMount{
+			Name:      "trusted-ca",
+			MountPath: "/etc/ssl/certs/tls-ca-bundle.pem",
+			SubPath:   "ca-bundle.crt",
+			ReadOnly:  true,
+		})
+		ensureEnv(&deploy.Spec.Template.Spec.Containers[i], corev1.EnvVar{
+			Name:  "SSL_CERT_DIR",
+			Value: "/var/run/secrets/kubernetes.io/serviceaccount:/etc/ssl/certs",
+		})
+	}
+	return k8sClient.Update(ctx, &deploy)
+}
+
+func ensureVolume(d *appsv1.Deployment, v corev1.Volume) {
+	spec := &d.Spec.Template.Spec
+	for i := range spec.Volumes {
+		if spec.Volumes[i].Name == v.Name {
+			spec.Volumes[i] = v
+			return
+		}
+	}
+	spec.Volumes = append(spec.Volumes, v)
+}
+
+func ensureMount(c *corev1.Container, m corev1.VolumeMount) {
+	for i := range c.VolumeMounts {
+		if c.VolumeMounts[i].Name == m.Name {
+			c.VolumeMounts[i] = m
+			return
+		}
+	}
+	c.VolumeMounts = append(c.VolumeMounts, m)
+}
+
+func ensureEnv(c *corev1.Container, e corev1.EnvVar) {
+	for i := range c.Env {
+		if c.Env[i].Name == e.Name {
+			c.Env[i] = e
+			return
+		}
+	}
+	c.Env = append(c.Env, e)
 }

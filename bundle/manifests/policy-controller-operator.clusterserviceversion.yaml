@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-06-09T09:32:12Z"
+    createdAt: "2025-06-16T13:19:36Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -263,11 +263,11 @@ spec:
                   periodSeconds: 10
                 resources:
                   limits:
-                    cpu: 500m
-                    memory: 128Mi
+                    cpu: "1"
+                    memory: 512Mi
                   requests:
-                    cpu: 10m
-                    memory: 64Mi
+                    cpu: 100m
+                    memory: 256Mi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:
@@ -283,11 +283,11 @@ spec:
                   protocol: TCP
                 resources:
                   limits:
-                    cpu: 500m
-                    memory: 128Mi
+                    cpu: "1"
+                    memory: 256Mi
                   requests:
-                    cpu: 10m
-                    memory: 64Mi
+                    cpu: 50m
+                    memory: 128Mi
                 volumeMounts:
                 - mountPath: /tmp/k8s-webhook-server/serving-certs
                   name: cert

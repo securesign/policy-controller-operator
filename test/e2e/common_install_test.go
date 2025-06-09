@@ -19,7 +19,7 @@ const (
 	installNamespace = "policy-controller-operator"
 	testNamespace    = "pco-e2e"
 
-	policyControllerCrPath   = "custom_resources/common_install/policy_controller.yaml"
+	policyControllerCrPath   = "custom_resources/common_install/policy_controller.yaml.tpl"
 	trustRootCrPath          = "custom_resources/common_install/trust_root.yaml.tpl"
 	clusterimagepolicyCrPath = "custom_resources/common_install/cluster_image_policy.yaml.tpl"
 
@@ -107,6 +107,30 @@ var _ = Describe("policy-controller-operator installation", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 			return dep.Status.ReadyReplicas
 		}).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, deploymentName)
+	})
+
+	It("injects the CA bundle and the Deployment rolls out", func() {
+		Expect(e2e_utils.InjectCAIntoDeployment(ctx, k8sClient, deploymentName, installNamespace)).To(Succeed())
+		Eventually(func() (bool, error) {
+			cm := &corev1.ConfigMap{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: installNamespace, Name: "trusted-ca-bundle"}, cm)
+			if err != nil {
+				return false, err
+			}
+			bundle, ok := cm.Data["ca-bundle.crt"]
+			return ok && len(bundle) > 0, nil
+		}).Should(BeTrue(), "trusted-ca-bundle never got its ca-bundle.crt")
+
+		dep := &appsv1.Deployment{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: installNamespace, Name: deploymentName}, dep)).To(Succeed(), "failed to read Deployment after CA injection")
+
+		desired := *dep.Spec.Replicas
+		Eventually(func() (int32, error) {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: installNamespace, Name: deploymentName}, dep); err != nil {
+				return 0, err
+			}
+			return dep.Status.ReadyReplicas, nil
+		}).Should(Equal(desired), "timed out waiting for %d Ready replicas in Deployment %q", desired, deploymentName)
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func() {
