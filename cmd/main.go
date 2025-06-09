@@ -1,54 +1,70 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/rs/zerolog/log"
-	"github.com/securesign/policy-controller-operator/cmd/webhook"
+	"github.com/securesign/policy-controller-operator/cmd/internal/constants"
+	rhtas_webhook "github.com/securesign/policy-controller-operator/cmd/internal/webhook"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
+
+func init() {
+	log.SetLogger(zap.New())
+}
 
 func main() {
 	var (
-		tlsKey  = flag.String("tls-key", "/tmp/k8s-webhook-server/serving-certs/tls.key", "Path to TLS key")
-		tlsCert = flag.String("tls-cert", "/tmp/k8s-webhook-server/serving-certs/tls.crt", "Path to TLS certificate")
-		addr    = flag.String("addr", ":9443", "Listen address")
+		certDir = flag.String("cert-dir", "/tmp/k8s-webhook-server/serving-certs", "CertDir is the directory that contains the server key and certificate. Defaults to <temp-dir>/k8s-webhook-server/serving-certs.")
+		port    = flag.Int("port", 9443, "Port is the port number that the server will serve. It will be defaulted to 9443 if unspecified.")
 	)
 	flag.Parse()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/validate", webhook.ServeValidate)
+	entryLog := log.Log.WithName("entrypoint")
 
-	srv := &http.Server{
-		Addr:    *addr,
-		Handler: mux,
+	// Setup a Manager
+	entryLog.Info("setting up manager")
+	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port:    *port,
+			CertDir: *certDir,
+		}),
+	})
+	if err != nil {
+		entryLog.Error(err, "unable to set up overall controller manager")
+		os.Exit(1)
 	}
 
-	idleConnsClosed := make(chan struct{})
-	go func() {
-		log.Info().Msgf("HTTPS server listening on %s", *addr)
-		if err := srv.ListenAndServeTLS(*tlsCert, *tlsKey); err != nil && err != http.ErrServerClosed {
-			log.Fatal().Err(err).Msg("failed to start admission webhook server")
-		}
-		close(idleConnsClosed)
-	}()
+	policyControllerGVK := schema.GroupVersionKind{
+		Group:   constants.PolicyControllerGroup,
+		Version: constants.PolicyControllerVersion,
+		Kind:    constants.PolicyControllerKind,
+	}
+	mgr.GetScheme().AddKnownTypeWithName(policyControllerGVK, &unstructured.Unstructured{})
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
-	log.Info().Msg("Shutdown signal received, shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Error().Err(err).Msg("server forced to shutdown")
+	policyController := &unstructured.Unstructured{}
+	policyController.SetGroupVersionKind(policyControllerGVK)
+	if err := builder.WebhookManagedBy(mgr).
+		For(policyController).
+		WithValidator(&rhtas_webhook.PolicyControllerValidator{}).
+		WithCustomPath("/validate").
+		Complete(); err != nil {
+		entryLog.Error(err, "unable to create webhook for PolicyController")
+		os.Exit(1)
 	}
 
-	<-idleConnsClosed
-	log.Info().Msg("Server shutdown complete")
+	entryLog.Info("starting manager")
+	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+		entryLog.Error(err, "unable to run manager")
+		os.Exit(1)
+	}
 }
