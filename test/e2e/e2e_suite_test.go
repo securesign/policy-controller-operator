@@ -59,6 +59,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	fmt.Printf("  %-22s %s\n", "Fulcio URL:", e2e_utils.FulcioUrl())
 	fmt.Printf("  %-22s %s\n", "OIDC Issuer URL:", e2e_utils.OidcIssuerUrl())
 	fmt.Printf("  %-22s %s\n", "OIDC Issuer Subject:", e2e_utils.OidcIssuerSubject())
+	fmt.Printf("  %-22s %s\n", "Inject CA:", e2e_utils.InjectCA())
 	fmt.Printf("  %-22s %s\n", "Test Image:", e2e_utils.TestImage())
 })
 

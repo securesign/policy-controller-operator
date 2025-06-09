@@ -19,7 +19,7 @@ const (
 	installNamespace = "policy-controller-operator"
 	testNamespace    = "pco-e2e"
 
-	policyControllerCrPath   = "custom_resources/common_install/policy_controller.yaml"
+	policyControllerCrPath   = "custom_resources/common_install/policy_controller.yaml.tpl"
 	trustRootCrPath          = "custom_resources/common_install/trust_root.yaml.tpl"
 	clusterimagepolicyCrPath = "custom_resources/common_install/cluster_image_policy.yaml.tpl"
 
@@ -107,6 +107,11 @@ var _ = Describe("policy-controller-operator installation", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 			return dep.Status.ReadyReplicas
 		}).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, deploymentName)
+	})
+
+	It("injects CA if needed", func() {
+		err := e2e_utils.InjectCAIntoDeployment(ctx, k8sClient, deploymentName, installNamespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func() {
