@@ -51,7 +51,7 @@ endif
 OPERATOR_SDK_VERSION ?= v1.39.2
 
 # Image URL to use all building/pushing image targets
-IMG ?= img
+IMG ?= quay.io/securesign/policy-controller-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
 # Be aware that the target commands are only tested with Docker which is
