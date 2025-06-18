@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - digest: sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
   name: controller
-  newName: quay.io/securesign/policy-controller-operator
+  newName: registry.redhat.io/rhtas/policy-controller-rhel9-operator

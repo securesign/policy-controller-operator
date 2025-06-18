@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: placeholder
-    createdAt: "2025-06-16T13:19:36Z"
+    createdAt: "2025-06-18T09:53:46Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -247,7 +247,7 @@ spec:
                 - --leader-elect
                 - --leader-election-id=policy-controller-operator
                 - --health-probe-bind-address=:8081
-                image: quay.io/securesign/policy-controller-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
+                image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -275,7 +275,7 @@ spec:
                     - ALL
               - command:
                 - admission-webhook-controller
-                image: quay.io/securesign/policy-controller-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
+                image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
                 name: admission-webhook-controller
                 ports:
                 - containerPort: 9443

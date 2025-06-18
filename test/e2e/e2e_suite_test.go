@@ -62,7 +62,3 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	fmt.Printf("  %-22s %s\n", "Inject CA:", e2e_utils.InjectCA())
 	fmt.Printf("  %-22s %s\n", "Test Image:", e2e_utils.TestImage())
 })
-
-var _ = SynchronizedAfterSuite(func() {}, func() {
-	k8sClient = nil
-})

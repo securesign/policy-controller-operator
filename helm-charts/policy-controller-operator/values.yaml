@@ -19,7 +19,7 @@ policy-controller:
     replicaCount: 1
     name: webhook
     image:
-      repository: quay.io/securesign/policy-controller
+      repository: registry.redhat.io/rhtas/policy-controller-rhel9
       version: sha256:3c39c6103bee0008e8a6d9bcc2f4620151fef0bc87512be0d1f135e1dac96e8e
       pullPolicy: IfNotPresent
     env: {}
