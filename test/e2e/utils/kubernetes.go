@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -114,10 +112,6 @@ func DeleteResource(ctx context.Context, k8sClient client.Client, gvk schema.Gro
 }
 
 func InjectCAIntoDeployment(ctx context.Context, k8sClient client.Client, deploymentName, namespace string) error {
-	inject, _ := strconv.ParseBool(strings.TrimSpace(InjectCA()))
-	if !inject {
-		return nil
-	}
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "trusted-ca-bundle",

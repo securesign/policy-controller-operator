@@ -25,6 +25,7 @@ kubectl apply -f config/samples/rhtas.charts_v1alpha1_policycontroller.yaml
 NOTE:
 * The resource must be installed in the **policy-controller-operator** namespace.
 * TUF is disabled by default (disable-tuf: true) to prevent the policy controller from trusting the Sigstore public good instance, which could allow untrusted resources to be deployed.
+* When deploying an unreleased version of the policy controller, run `make dev-images` to update the image registry coordinates to quay.io before building.
 
 The Policy Controller should now be deployed to your cluster
 
@@ -91,6 +92,47 @@ Undeploy the controller from the cluster:
 ```sh
 make undeploy
 ```
+
+# Development
+## Running the E2E test suite
+The E2E test suite validates the Policy Controller operator against a OpenShift/Kubernetes cluster.
+
+### Prerequisites
+* Kubernetes/OpenShift cluster.
+* RHTAS Operator installed and running.
+
+### 1. Build and deploy 
+Build and deploy the policy controller operator to your cluster.
+
+### 2. Build a test image
+Build a test image and define an env var for it.
+```sh
+export TEST_IMAGE=quay.io/<org>/policy-controller-test:latest
+echo 'FROM scratch' | podman build -f - -t $TEST_IMAGE . && podman push $TEST_IMAGE
+```
+
+### 3. Define RHTAS ENV var
+```sh
+export RHTAS_INSTALL_NAMESPACE=openshift-rhtas-operator
+source ./test/tas-env-variables.sh
+```
+
+### (Optional) 
+If your cluster’s ingress uses a self-signed certificate, update your local trust store and tell the tests to inject the cluster CA:
+```sh
+oc -n openshift-ingress-operator get secret router-ca -o jsonpath='{.data.tls\.crt}' | base64 --decode > ingress-ca.crt
+sudo cp ingress-ca.crt /etc/pki/ca-trust/source/anchors/ 
+sudo update-ca-trust extract
+
+export INJECT_CA=true
+```
+
+### 4. Run the E2E tests
+```sh
+make e2e-test 
+```
+
+NOTE: On subsequent runs of the end-to-end tests, you’ll need to rebuild and push your image so that the policy controller will not trust it.
 
 # Documentation
 For more information on the Policy controller please visit the upstream documentation: https://docs.sigstore.dev/policy-controller/overview/

@@ -3,6 +3,8 @@ package e2e
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -110,6 +112,14 @@ var _ = Describe("policy-controller-operator installation", Ordered, func() {
 	})
 
 	It("injects the CA bundle and the Deployment rolls out", func() {
+		inject, err := strconv.ParseBool(strings.TrimSpace(e2e_utils.InjectCA()))
+		if err != nil {
+			panic(fmt.Errorf("invalid value for INJECT_CA: %w", err))
+		}
+		if !inject {
+			Skip("CA-injection tests are disabled for this run")
+		}
+
 		Expect(e2e_utils.InjectCAIntoDeployment(ctx, k8sClient, deploymentName, installNamespace)).To(Succeed())
 		Eventually(func() (bool, error) {
 			cm := &corev1.ConfigMap{}
