@@ -51,7 +51,7 @@ endif
 OPERATOR_SDK_VERSION ?= v1.39.2
 
 # Image URL to use all building/pushing image targets
-IMG ?= img
+IMG ?= registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
 # Be aware that the target commands are only tested with Docker which is
@@ -117,6 +117,12 @@ docker-buildx: ## Build and push docker image for the manager for cross-platform
 	- $(CONTAINER_TOOL) buildx rm project-v3-builder
 
 ##@ Deployment
+
+# Switch images from `registry.redhat.io` images to the dev images
+.PHONY: dev-images
+dev-images:
+	sed -i 's#registry\.redhat\.io/rhtas/policy-controller-rhel9#quay.io/securesign/policy-controller#g' \
+		helm-charts/policy-controller-operator/values.yaml
 
 .PHONY: install
 install: kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
@@ -251,3 +257,8 @@ catalog-push: ## Push a catalog image.
 .PHONY: unit-test
 unit-test:
 	cd cmd && go test -count=1 ./...
+
+.PHONY: e2e-test
+e2e-test:
+	cd test && go test -count=1 -v ./e2e
+
