@@ -47,16 +47,6 @@ func ExpectExists(name, namespace string, obj client.Object, k8sClient client.Cl
 	}, "10s", "1s").Should(Succeed(), "expected %T %q to exist", obj, name)
 }
 
-func VerifyByCosign(ctx context.Context, targetImageName string) {
-	oidcToken, err := OidcToken(ctx)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(oidcToken).ToNot(BeEmpty())
-
-	Expect(Execute("cosign", "initialize", "--mirror="+TufUrl(), "--root="+TufUrl()+"/root.json")).To(Succeed())
-	Expect(Execute("cosign", "sign", "-y", "--fulcio-url="+FulcioUrl(), "--rekor-url="+RekorUrl(), "--oidc-issuer="+OidcIssuerUrl(), "--oidc-client-id="+OidcClientID(), "--identity-token="+oidcToken, targetImageName)).To(Succeed())
-	Expect(Execute("cosign", "verify", "--rekor-url="+RekorUrl(), "--certificate-identity-regexp", ".*@redhat", "--certificate-oidc-issuer-regexp", ".*keycloak.*", targetImageName)).To(Succeed())
-}
-
 func RenderTemplate(path string, data interface{}) ([]byte, error) {
 	tpl, err := template.ParseFiles(path)
 	if err != nil {

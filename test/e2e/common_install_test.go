@@ -174,6 +174,7 @@ var _ = Describe("policy-controller-operator installation", Ordered, func() {
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
+			"TEST_IMAGE":          e2e_utils.TestImage(),
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, renderedClusteImagePolicy, "")).To(Succeed())
@@ -191,17 +192,29 @@ var _ = Describe("policy-controller-operator installation", Ordered, func() {
 		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the common-install-cluster-image-policy key")
 	})
 
-	It("should reject pod creation in a watched namespace", func() {
+	It("should create a test namespace", func() {
 		Expect(e2e_utils.CreateTestNamespace(ctx, k8sClient, testNamespace)).NotTo(HaveOccurred())
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, testNamespace)).
-			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
 	})
 
-	It("should sign the image using cosign", func() {
+	It("should reject pod creation in a watched namespace and sign the image", func() {
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, testNamespace)).
+			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
 		e2e_utils.VerifyByCosign(ctx, e2e_utils.TestImage())
 	})
 
-	It("should accept the pod after signing", func() {
+	It("should reject pod creation in a watched namespace and attach a provenance", func() {
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, testNamespace)).
+			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
+		e2e_utils.AttachProvenance(ctx, e2e_utils.TestImage())
+	})
+
+	It("should reject pod creation in a watched namespace and attach an SBOM", func() {
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, testNamespace)).
+			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
+		e2e_utils.AttachSBOM(ctx, e2e_utils.TestImage())
+	})
+
+	It("should accept the pod", func() {
 		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, testNamespace)).NotTo(HaveOccurred())
 	})
 })
