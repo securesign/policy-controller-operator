@@ -124,6 +124,11 @@ dev-images:
 	sed -i 's#registry\.redhat\.io/rhtas/policy-controller-rhel9#quay.io/securesign/policy-controller#g' \
 		helm-charts/policy-controller-operator/values.yaml
 
+.PHONY: unpack-policy-controller
+unpack-policy-controller:
+	tar -xvf helm-charts/policy-controller-operator/charts/policy-controller-*.tgz \
+	-C helm-charts/policy-controller-operator/charts/
+
 .PHONY: install
 install: kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -

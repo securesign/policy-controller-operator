@@ -94,8 +94,8 @@ policy-controller:
   leasescleanup:
     priorityClass: ""
     image:
-      repository: cgr.dev/chainguard/kubectl
-      version: latest-dev
+      repository: registry.redhat.io/openshift4/ose-cli
+      version: latest
       pullPolicy: IfNotPresent
     resources:
       limits:

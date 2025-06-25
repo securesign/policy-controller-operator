@@ -87,5 +87,11 @@ rules:
   - "apps"
   resources:
   - "deployments"
+- verbs:
+  - "*"
+  apiGroups:
+  - "batch"
+  resources:
+  - "jobs"
 
 # +kubebuilder:scaffold:rules
