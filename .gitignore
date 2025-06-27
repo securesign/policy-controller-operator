@@ -16,3 +16,4 @@ bin
 # testing
 CatalogSource.yaml
 test/Dockerfile
+helm-charts/policy-controller-operator/charts/policy-controller

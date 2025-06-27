@@ -3,4 +3,4 @@ dependencies:
   repository: https://sigstore.github.io/helm-charts
   version: 0.10.1
 digest: sha256:ed928d25cdba97f26dc787471ede3a1681631fd19270ec80e811f46cf260bf5b
-generated: "2025-05-12T16:14:33.518537855+01:00"
+generated: "2025-06-27T10:19:31.562345255+01:00"

@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
-    createdAt: "2025-06-23T09:54:13Z"
+    createdAt: "2025-06-27T10:05:26Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -218,6 +218,12 @@ spec:
           - apps
           resources:
           - deployments
+          verbs:
+          - '*'
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
           verbs:
           - '*'
         - apiGroups:

@@ -21,3 +21,12 @@
 .idea/
 *.tmproj
 .vscode/
+
+# ignore the CRD install so we can allow OLM to manage them
+charts/policy-controller/templates/crds/clusterimagepolicy.yaml
+charts/policy-controller/templates/crds/trustroots.yaml
+
+# ignore upstream template files and use ours instead
+charts/policy-controller/templates/webhook/cleanup-leases.yaml
+charts/policy-controller/templates/webhook/role_webhook.yaml
+charts/policy-controller/templates/webhook/rolebinding_webhook.yaml

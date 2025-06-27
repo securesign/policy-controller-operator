@@ -7,5 +7,5 @@ appVersion: "1.16.0"
 dependencies:
   - name: policy-controller
     version: 0.10.1
-    repository: "file://charts/policy-controller"
+    repository: "https://sigstore.github.io/helm-charts"
     alias: policy-controller

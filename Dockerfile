@@ -8,6 +8,16 @@ COPY cmd cmd
 
 RUN go build -mod=mod -o admission-webhook-controller ./cmd
 
+# Unpack Helm chart
+FROM registry.redhat.io/ubi9/ubi@sha256:3cd72dd4045dfbaa800a8f0917a712c0fc40a6551697259d932022b3b43cdba3 AS unpack-templates
+WORKDIR /opt/app-root/src/
+ENV HOME=/opt/app-root/src/
+
+COPY helm-charts ${HOME}/helm-charts
+RUN tar -xvf ${HOME}/helm-charts/policy-controller-operator/charts/policy-controller-*.tgz \
+    -C ${HOME}/helm-charts/policy-controller-operator/charts/ && \
+    rm ${HOME}/helm-charts/policy-controller-operator/charts/policy-controller-*.tgz
+
 # Build the manager binary
 FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator@sha256:b25e2dc071ff9e7f7bfd68ae3cd652ae2d3a4e5935f6dfaf880362b40cf372dc
 
@@ -21,7 +31,7 @@ LABEL name="policy-controller-operator"
 
 ENV HOME=/opt/helm
 COPY watches.yaml ${HOME}/watches.yaml
-COPY helm-charts  ${HOME}/helm-charts
+COPY --from=unpack-templates /opt/app-root/src/helm-charts ${HOME}/helm-charts
 COPY LICENSE /licenses/license.txt
 COPY --from=admission-webhook-controller /opt/app-root/src/admission-webhook-controller /usr/local/bin/admission-webhook-controller
 

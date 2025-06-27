@@ -1,11 +1,16 @@
+{{- $pc := index .Subcharts "policy-controller" -}}
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ template "policy-controller.fullname" . }}-webhook
+  name: {{ template "policy-controller.fullname" $pc }}-webhook
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "policy-controller.labels" . | nindent 4 }}
-    control-plane: {{ template "policy-controller.fullname" . }}-webhook
+    {{- include "policy-controller.labels" $pc | nindent 4 }}
+    control-plane: {{ template "policy-controller.fullname" $pc }}-webhook
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
 rules:
   # Needed to watch and load configuration and secret data.
   - apiGroups: [""]
@@ -34,3 +39,5 @@ rules:
   - apiGroups: ["policy.sigstore.dev"]
     resources: ["trustroots"]
     verbs: ["get", "list"]
+
+# Base: https://github.com/sigstore/helm-charts/blob/main/charts/policy-controller/templates/webhook/role_webhook.yaml
