@@ -9,7 +9,7 @@ COPY cmd cmd
 RUN go build -mod=mod -o admission-webhook-controller ./cmd
 
 # Unpack Helm chart
-FROM registry.redhat.io/ubi9/ubi@sha256:067f405e0edc049421589e52678962cc2708d305b6efe10815912ef9e8754653 AS unpack-templates
+FROM registry.redhat.io/ubi9/ubi@sha256:2e4eebec441e8bbc3459fcc83ddee0f7d3cfd219097b4110a37d7ff4fe0ff2e9 AS unpack-templates
 WORKDIR /opt/app-root/src/
 ENV HOME=/opt/app-root/src/
 
