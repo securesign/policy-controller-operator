@@ -1,0 +1,63 @@
+{{- $pc := index .Subcharts "policy-controller" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "policy-controller.labels" $pc | nindent 4 }}
+    control-plane: {{ template "policy-controller.fullname" $pc }}-webhook
+  name: {{ template "policy-controller.fullname" $pc }}-webhook-logging
+  namespace: {{ .Release.Namespace }}
+  {{- if $pc.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml $pc.Values.commonAnnotations | nindent 4 }}
+  {{- end }}
+data:
+  zap-logger-config: |-
+    {
+      "level": "{{ $pc.Values.loglevel }}",
+      "sampling": {
+        "initial": 1,
+        "thereafter": 1000000000
+      },
+      "development": false,
+      "outputPaths": ["stdout"],
+      "errorOutputPaths": ["stderr"],
+      "encoding": "json",
+      "encoderConfig": {
+        "timeKey": "ts",
+        "levelKey": "level",
+        "nameKey": "logger",
+        "callerKey": "caller",
+        "messageKey": "msg",
+        "stacktraceKey": "stacktrace",
+        "lineEnding": "",
+        "levelEncoder": "",
+        "timeEncoder": "iso8601",
+        "durationEncoder": "",
+        "callerEncoder": ""
+      }
+    }
+  # Log level overrides
+  # Changes are be picked up immediately.
+  loglevel.controller: "{{ $pc.Values.loglevel }}"
+  loglevel.webhook: "{{ $pc.Values.loglevel }}"
+{{- if $pc.Values.serviceMonitor.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "policy-controller.labels" $pc | nindent 4 }}
+    control-plane: {{ template "policy-controller.fullname" $pc }}-webhook
+  name: {{ template "policy-controller.fullname" $pc }}-webhook-observability
+  namespace: {{ .Release.Namespace }}
+  {{- if $pc.Values.commonAnnotations }}
+  annotations:
+{{- toYaml $pc.Values.commonAnnotations | nindent 4 }}
+  {{- end }}
+data:
+  metrics.backend-destination: prometheus
+  metrics.request-metrics-backend-destination: prometheus
+{{- end }}
+
+# Base: https://github.com/sigstore/helm-charts/blob/main/charts/policy-controller/templates/webhook/configmap.yaml
