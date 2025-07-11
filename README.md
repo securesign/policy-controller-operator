@@ -104,14 +104,7 @@ The E2E test suite validates the Policy Controller operator against a OpenShift/
 ### 1. Build and deploy 
 Build and deploy the policy controller operator to your cluster.
 
-### 2. Build a test image
-Build a test image and define an env var for it.
-```sh
-export TEST_IMAGE=quay.io/<org>/policy-controller-test:latest
-echo 'FROM scratch' | podman build -f - -t $TEST_IMAGE . && podman push $TEST_IMAGE
-```
-
-### 3. Define RHTAS ENV var
+### 2. Define RHTAS ENV var
 ```sh
 export RHTAS_INSTALL_NAMESPACE=openshift-rhtas-operator
 source ./test/tas-env-variables.sh
@@ -131,8 +124,6 @@ export INJECT_CA=true
 ```sh
 make e2e-test 
 ```
-
-NOTE: On subsequent runs of the end-to-end tests, you’ll need to rebuild and push your image so that the policy controller will not trust it.
 
 # Documentation
 For more information on the Policy controller please visit the upstream documentation: https://docs.sigstore.dev/policy-controller/overview/

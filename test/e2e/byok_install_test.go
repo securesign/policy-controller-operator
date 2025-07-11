@@ -18,32 +18,32 @@ import (
 )
 
 const (
-	policyControllerCommonCrPath   = "custom_resources/common_install/policy_controller.yaml.tpl"
-	trustRootCommonCrPath          = "custom_resources/common_install/trust_root.yaml.tpl"
-	clusterimagepolicyCommonCrPath = "custom_resources/common_install/cluster_image_policy.yaml.tpl"
-	commonTestNS                   = "pco-e2e"
-	commonTestImageEnv             = "COMMON_TEST_IMAGE"
+	policyControllerBYOKCrPath   = "custom_resources/byok/policy_controller.yaml.tpl"
+	trustRootBYOKCrPath          = "custom_resources/byok/trust_root.yaml.tpl"
+	clusterimagepolicyBYOKCrPath = "custom_resources/byok/cluster_image_policy.yaml.tpl"
+	byokTestNS                   = "pco-e2e-byok"
+	byokTestImageEnv             = "BYOK_TEST_IMAGE"
 )
 
 var (
-	policyControllerCommonCrABSPath   = ""
-	trustRootCommonCrABSPath          = ""
-	clusterImagePolicyCommonCrABSPath = ""
-	commonRenderedTrustRoot           []byte
-	commonRenderedClusteImagePolicy   []byte
+	policyControllerBYOKCrABSPath   = ""
+	trustRootBYOKCrABSPath          = ""
+	clusterImagePolicyBYOKCrABSPath = ""
+	byokRenderedTrustRoot           []byte
+	byokRenderedClusteImagePolicy   []byte
 )
 
-var _ = Describe("policy-controller-operator common installation", Ordered, func() {
+var _ = Describe("policy-controller-operator byok", Ordered, func() {
 	var err error
 
 	BeforeAll(func() {
-		policyControllerCommonCrABSPath, err = filepath.Abs(policyControllerCommonCrPath)
+		policyControllerBYOKCrABSPath, err = filepath.Abs(policyControllerBYOKCrPath)
 		Expect(err).ToNot(HaveOccurred())
 
-		trustRootCommonCrABSPath, err = filepath.Abs(trustRootCommonCrPath)
+		trustRootBYOKCrABSPath, err = filepath.Abs(trustRootBYOKCrPath)
 		Expect(err).ToNot(HaveOccurred())
 
-		clusterImagePolicyCommonCrABSPath, err = filepath.Abs(clusterimagepolicyCommonCrPath)
+		clusterImagePolicyBYOKCrABSPath, err = filepath.Abs(clusterimagepolicyBYOKCrPath)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("ensuring the policy-controller-operator namespace exists")
@@ -51,14 +51,14 @@ var _ = Describe("policy-controller-operator common installation", Ordered, func
 			ObjectMeta: metav1.ObjectMeta{Name: e2e_utils.InstallNamespace},
 		})).To(SatisfyAny(Succeed(), MatchError(ContainSubstring("already exists"))))
 
-		By("applying the operator bundle: " + policyControllerCommonCrABSPath)
-		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, nil, policyControllerCommonCrABSPath)).To(Succeed())
+		By("applying the operator bundle: " + policyControllerBYOKCrABSPath)
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, nil, policyControllerBYOKCrABSPath)).To(Succeed())
 
 		DeferCleanup(func() {
-			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, "test-pod", commonTestNS)).To(Succeed())
-			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}, commonTestNS, "")).To(Succeed())
-			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, "common-install-trust-root", "")).To(Succeed())
-			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, "common-install-cluster-image-policy", "")).To(Succeed())
+			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, "test-pod", byokTestNS)).To(Succeed())
+			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}, byokTestNS, "")).To(Succeed())
+			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, "byok-install-trust-root", "")).To(Succeed())
+			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, "byok-install-cluster-image-policy", "")).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "rhtas.charts.redhat.com", Version: "v1alpha1", Kind: "PolicyController"}, "policycontroller-sample", e2e_utils.InstallNamespace)).To(Succeed())
 		})
 	})
@@ -133,77 +133,88 @@ var _ = Describe("policy-controller-operator common installation", Ordered, func
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func() {
-		tufroot, err := e2e_utils.ResolveTufRoot(ctx)
+		trustedrootValues, err := e2e_utils.ParseTufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
-
-		commonRenderedTrustRoot, err = e2e_utils.RenderTemplate(trustRootCommonCrABSPath, map[string]string{
-			"TUFMirror": e2e_utils.TufUrl(),
-			"TUFRoot":   e2e_utils.Base64EncodeString(tufroot),
+		byokRenderedTrustRoot, err = e2e_utils.RenderTemplate(trustRootBYOKCrABSPath, map[string]string{
+			"FULCIO_ORG_NAME":      trustedrootValues.FulcioOrgName,
+			"FULCIO_COMMON_NAME":   trustedrootValues.FulcioCommonName,
+			"FULCIO_URL":           e2e_utils.FulcioUrl(),
+			"FULCIO_CERT_CHAIN":    trustedrootValues.FulcioCertChain,
+			"CTLOG_URL":            fmt.Sprintf("http://ctlog.%s.svc.cluster.local", e2e_utils.RhtasInstallNamespace()),
+			"CTLOG_HASH_ALGORITHM": trustedrootValues.CtLogHashAlgo,
+			"CTFE_PUBLIC_KEY":      trustedrootValues.CtfePublicKey,
+			"REKOR_URL":            e2e_utils.RekorUrl(),
+			"REKOR_HASH_ALGORITHM": trustedrootValues.RekorHashAlgo,
+			"REKOR_PUBLIC_KEY":     trustedrootValues.RekorPublicKey,
+			"TSA_ORG_NAME":         trustedrootValues.TsaOrgName,
+			"TSA_COMMON_NAME":      trustedrootValues.TsaCommonName,
+			"TSA_URL":              e2e_utils.TsaUrl(),
+			"TSA_CERT_CHAIN":       trustedrootValues.TsaCertChain,
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, commonRenderedTrustRoot, "")).To(Succeed())
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedTrustRoot, "")).To(Succeed())
 
 		Eventually(func() (string, error) {
 			cm := &corev1.ConfigMap{}
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
 				return "", err
 			}
-			val, ok := cm.Data["common-install-trust-root"]
+			val, ok := cm.Data["byok-install-trust-root"]
 			if !ok {
 				return "", fmt.Errorf("key not present yet")
 			}
 			return val, nil
-		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the common-install-trust-root key")
+		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the byok-install-trust-root key")
 	})
 
 	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func() {
 
-		commonRenderedClusteImagePolicy, err = e2e_utils.RenderTemplate(clusterImagePolicyCommonCrABSPath, map[string]string{
+		byokRenderedClusteImagePolicy, err = e2e_utils.RenderTemplate(clusterImagePolicyBYOKCrABSPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
-			"TEST_IMAGE":          e2e_utils.PrepareImage(ctx, commonTestImageEnv),
+			"TEST_IMAGE":          e2e_utils.PrepareImage(ctx, byokTestImageEnv),
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, commonRenderedClusteImagePolicy, "")).To(Succeed())
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedClusteImagePolicy, "")).To(Succeed())
 
 		Eventually(func() (string, error) {
 			cm := &corev1.ConfigMap{}
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
 				return "", err
 			}
-			val, ok := cm.Data["common-install-cluster-image-policy"]
+			val, ok := cm.Data["byok-install-cluster-image-policy"]
 			if !ok {
 				return "", fmt.Errorf("key not present yet")
 			}
 			return val, nil
-		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the common-install-cluster-image-policy key")
+		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the byok-install-cluster-image-policy key")
 	})
 
 	It("should create a test namespace", func() {
-		Expect(e2e_utils.CreateTestNamespace(ctx, k8sClient, commonTestNS)).NotTo(HaveOccurred())
+		Expect(e2e_utils.CreateTestNamespace(ctx, k8sClient, byokTestNS)).NotTo(HaveOccurred())
 	})
 
 	It("should reject pod creation in a watched namespace and sign the image", func() {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, commonTestNS, e2e_utils.PrepareImage(ctx, commonTestImageEnv))).
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
-		e2e_utils.VerifyByCosign(ctx, e2e_utils.PrepareImage(ctx, commonTestImageEnv))
+		e2e_utils.VerifyByCosign(ctx, e2e_utils.PrepareImage(ctx, byokTestImageEnv))
 	})
 
 	It("should reject pod creation in a watched namespace and attach a provenance", func() {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, commonTestNS, e2e_utils.PrepareImage(ctx, commonTestImageEnv))).
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
-		e2e_utils.AttachProvenance(ctx, e2e_utils.PrepareImage(ctx, commonTestImageEnv))
+		e2e_utils.AttachProvenance(ctx, e2e_utils.PrepareImage(ctx, byokTestImageEnv))
 	})
 
 	It("should reject pod creation in a watched namespace and attach an SBOM", func() {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, commonTestNS, e2e_utils.PrepareImage(ctx, commonTestImageEnv))).
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
-		e2e_utils.AttachSBOM(ctx, e2e_utils.PrepareImage(ctx, commonTestImageEnv))
+		e2e_utils.AttachSBOM(ctx, e2e_utils.PrepareImage(ctx, byokTestImageEnv))
 	})
 
 	It("should accept the pod", func() {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, commonTestNS, e2e_utils.PrepareImage(ctx, commonTestImageEnv))).NotTo(HaveOccurred())
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).NotTo(HaveOccurred())
 	})
 })
