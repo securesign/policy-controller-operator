@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -27,7 +28,7 @@ func InjectCA() string {
 	return EnvOrDefault(injectCA, defaultInjectCA)
 }
 
-func CreateTestPod(ctx context.Context, k8sClient client.Client, ns string) error {
+func CreateTestPod(ctx context.Context, k8sClient client.Client, ns, testImage string) error {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-pod",
@@ -37,7 +38,7 @@ func CreateTestPod(ctx context.Context, k8sClient client.Client, ns string) erro
 			Containers: []corev1.Container{
 				{
 					Name:  "test-image",
-					Image: TestImage(),
+					Image: testImage,
 				},
 			},
 		},
@@ -79,36 +80,36 @@ func ApplyManifest(ctx context.Context, k8sClient client.Client, data []byte, fi
 	return k8sClient.Patch(ctx, obj, client.Apply, client.FieldOwner("policy-controller-operator"))
 }
 
-func DeleteManifest(ctx context.Context, k8sClient client.Client, data []byte, filepath string) error {
-	var err error
-
-	if data == nil {
-		data, err = os.ReadFile(filepath)
-		if err != nil {
-			return err
-		}
-	}
-
-	dec := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-	obj := &unstructured.Unstructured{}
-	_, _, err = dec.Decode(data, nil, obj)
-	if err != nil {
-		return fmt.Errorf("error decoding %s into Unstructured: %w", filepath, err)
-	}
-	return k8sClient.Delete(ctx, obj)
-}
-
 func DeleteResource(ctx context.Context, k8sClient client.Client, gvk schema.GroupVersionKind, name, namespace string) error {
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(gvk)
 	obj.SetName(name)
-	obj.SetNamespace(namespace)
+	if namespace != "" {
+		obj.SetNamespace(namespace)
+	}
 
 	if err := k8sClient.Delete(ctx, obj); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to delete %s %q in namespace %q: %w",
-			gvk.Kind, name, namespace, err)
+		return fmt.Errorf("failed to delete %s %q: %w", gvk.Kind, name, err)
 	}
-	return nil
+
+	key := client.ObjectKey{Name: name, Namespace: namespace}
+	backoff := wait.Backoff{
+		Duration: 1 * time.Second,
+		Factor:   1.5,
+		Steps:    10,
+		Jitter:   0.1,
+	}
+	return wait.ExponentialBackoffWithContext(ctx, backoff, func(ctx context.Context) (bool, error) {
+		getErr := k8sClient.Get(ctx, key, obj)
+		switch {
+		case errors.IsNotFound(getErr):
+			return true, nil
+		case getErr != nil:
+			return false, getErr
+		default:
+			return false, nil
+		}
+	})
 }
 
 func InjectCAIntoDeployment(ctx context.Context, k8sClient client.Client, deploymentName, namespace string) error {

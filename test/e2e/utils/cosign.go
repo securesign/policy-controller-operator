@@ -13,7 +13,7 @@ func VerifyByCosign(ctx context.Context, targetImageName string) {
 	Expect(oidcToken).ToNot(BeEmpty())
 
 	Expect(Execute("cosign", "initialize", "--mirror="+TufUrl(), "--root="+TufUrl()+"/root.json")).To(Succeed())
-	Expect(Execute("cosign", "sign", "-y", "--fulcio-url="+FulcioUrl(), "--rekor-url="+RekorUrl(), "--oidc-issuer="+OidcIssuerUrl(), "--oidc-client-id="+OidcClientID(), "--identity-token="+oidcToken, targetImageName)).To(Succeed())
+	Expect(Execute("cosign", "sign", "-y", "--timestamp-server-url="+TsaUrl(), "--fulcio-url="+FulcioUrl(), "--rekor-url="+RekorUrl(), "--oidc-issuer="+OidcIssuerUrl(), "--oidc-client-id="+OidcClientID(), "--identity-token="+oidcToken, targetImageName)).To(Succeed())
 	Expect(Execute("cosign", "verify", "--rekor-url="+RekorUrl(), "--certificate-identity-regexp", ".*@redhat", "--certificate-oidc-issuer-regexp", ".*keycloak.*", targetImageName)).To(Succeed())
 }
 
@@ -35,6 +35,7 @@ func AttachProvenance(ctx context.Context, targetImageName string) {
 		"--type", "slsaprovenance",
 		"--fulcio-url="+FulcioUrl(),
 		"--rekor-url="+RekorUrl(),
+		"--timestamp-server-url="+TsaUrl(),
 		"--oidc-issuer="+OidcIssuerUrl(),
 		"--oidc-client-id="+OidcClientID(),
 		"--identity-token="+oidcToken,
@@ -67,6 +68,7 @@ func AttachSBOM(ctx context.Context, targetImageName string) {
 		"--yes",
 		"--predicate", "-",
 		"--type", "cyclonedx",
+		"--timestamp-server-url="+TsaUrl(),
 		"--fulcio-url="+FulcioUrl(),
 		"--rekor-url="+RekorUrl(),
 		"--oidc-issuer="+OidcIssuerUrl(),
