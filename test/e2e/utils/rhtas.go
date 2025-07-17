@@ -1,16 +1,27 @@
 package e2e_utils
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
+	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/sigstore/sigstore-go/pkg/tuf"
+	"github.com/theupdateframework/go-tuf/v2/metadata/config"
+	"github.com/theupdateframework/go-tuf/v2/metadata/updater"
 )
 
 const (
@@ -29,10 +40,11 @@ const (
 	defaultRhtasInstallNamespace = "openshift-rhtas-operator"
 	rhtasInstallNamespaceEnv     = "RHTAS_INSTALL_NAMESPACE"
 
-	fulcioTufTarget = "fulcio_v1.crt.pem"
-	tsaTufTarget    = "tsa.certchain.pem"
-	ctlogTufTarget  = "ctfe.pub"
-	rekorTufTarget  = "rekor.pub"
+	fulcioTufTarget      = "fulcio_v1.crt.pem"
+	tsaTufTarget         = "tsa.certchain.pem"
+	ctlogTufTarget       = "ctfe.pub"
+	rekorTufTarget       = "rekor.pub"
+	trustedRootTufTarget = "trusted_root.json"
 )
 
 type TrustRootValues struct {
@@ -196,4 +208,135 @@ func parsePubKey(pemBytes []byte) (keyB64, algo string, err error) {
 	}
 
 	return keyB64, algo, nil
+}
+
+func TufMirrorFS(ctx context.Context) ([]byte, error) {
+	tufRoot, err := ResolveTufRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tufRootDir, err := os.MkdirTemp(".", "tuf-repo-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tufRootDir)
+
+	cfg, err := config.New(TufUrl(), tufRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.RemoteTargetsURL = TufUrl() + "/targets"
+	cfg.RemoteMetadataURL = TufUrl()
+	cfg.LocalMetadataDir = tufRootDir
+	cfg.LocalTargetsDir = filepath.Join(tufRootDir, "targets")
+	if err := cfg.EnsurePathsExist(); err != nil {
+		return nil, err
+	}
+
+	cfg.PrefixTargetsWithHash = true
+	up, err := updater.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, name := range []string{fulcioTufTarget, tsaTufTarget, ctlogTufTarget, rekorTufTarget, trustedRootTufTarget} {
+		info, err := up.GetTargetInfo(name)
+		if err != nil {
+			return nil, err
+		}
+		var hashPrefix string
+		for _, v := range info.Hashes {
+			hashPrefix = hex.EncodeToString(v)
+			break
+		}
+		hashedFileName := fmt.Sprintf("%s.%s", hashPrefix, filepath.Base(name))
+		localPath := filepath.Join(tufRootDir, "targets", hashedFileName)
+		if _, _, err := up.DownloadTarget(info, localPath, ""); err != nil {
+			return nil, err
+		}
+
+	}
+
+	if err := writeVersionedMetadataFile(cfg.LocalMetadataDir+"/snapshot.json", cfg.LocalMetadataDir); err != nil {
+		return nil, err
+	}
+
+	if err := writeVersionedMetadataFile(cfg.LocalMetadataDir+"/root.json", cfg.LocalMetadataDir); err != nil {
+		return nil, err
+	}
+	if err := writeVersionedMetadataFile(cfg.LocalMetadataDir+"/targets.json", cfg.LocalMetadataDir); err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err := tarDir(tufRootDir, &buf); err != nil {
+		return nil, fmt.Errorf("tarDir: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+func tarDir(root string, dst io.Writer) error {
+	gw := gzip.NewWriter(dst)
+	defer gw.Close()
+
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+
+		hdr, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+
+		rel, _ := filepath.Rel(root, path)
+		hdr.Name = filepath.ToSlash(rel)
+
+		if d.Type()&fs.ModeSymlink != 0 {
+			hdr.Linkname, _ = os.Readlink(path)
+		}
+
+		if err = tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(tw, f)
+		return err
+	})
+}
+
+func writeVersionedMetadataFile(path, localDir string) error {
+	role := strings.TrimSuffix(filepath.Base(path), ".json")
+
+	var meta struct{ Signed struct{ Version int64 } }
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err = json.Unmarshal(b, &meta); err != nil {
+		return err
+	}
+
+	versioned := filepath.Join(localDir, fmt.Sprintf("%d.%s.json", meta.Signed.Version, role))
+	return os.WriteFile(versioned, b, 0o644)
 }
