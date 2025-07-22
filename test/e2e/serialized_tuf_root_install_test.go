@@ -33,7 +33,7 @@ var (
 	stufRenderedClusteImagePolicy   []byte
 )
 
-var _ = Describe("policy-controller-operator byok", Ordered, func() {
+var _ = Describe("policy-controller-operator serializd tuf root", Ordered, func() {
 	var err error
 
 	BeforeAll(func() {
