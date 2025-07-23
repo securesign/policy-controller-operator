@@ -259,15 +259,15 @@ func TufMirrorFS(ctx context.Context) ([]byte, error) {
 
 	}
 
-	if err := writeVersionedMetadataFile(cfg.LocalMetadataDir+"/snapshot.json", cfg.LocalMetadataDir); err != nil {
-		return nil, err
-	}
+	for _, role := range []string{"snapshot", "root", "targets"} {
+		unversioned := filepath.Join(cfg.LocalMetadataDir, role+".json")
 
-	if err := writeVersionedMetadataFile(cfg.LocalMetadataDir+"/root.json", cfg.LocalMetadataDir); err != nil {
-		return nil, err
-	}
-	if err := writeVersionedMetadataFile(cfg.LocalMetadataDir+"/targets.json", cfg.LocalMetadataDir); err != nil {
-		return nil, err
+		if err := writeVersionedMetadataFile(unversioned, cfg.LocalMetadataDir); err != nil {
+			return nil, err
+		}
+		if err := os.Remove(unversioned); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return nil, err
+		}
 	}
 
 	var buf bytes.Buffer
