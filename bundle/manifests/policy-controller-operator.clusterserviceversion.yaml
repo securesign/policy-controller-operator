@@ -89,8 +89,8 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
-    createdAt: "2025-06-27T10:05:26Z"
+    containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:0df1d7bc0d437207db49eed60b5b3c5659c72adb11665d08f98034ddd2935d17
+    createdAt: "2025-07-24T11:02:08Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -266,7 +266,7 @@ spec:
                 - --leader-elect
                 - --leader-election-id=policy-controller-operator
                 - --health-probe-bind-address=:8081
-                image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
+                image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:0df1d7bc0d437207db49eed60b5b3c5659c72adb11665d08f98034ddd2935d17
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -294,7 +294,7 @@ spec:
                     - ALL
               - command:
                 - admission-webhook-controller
-                image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:c561afee34ee5a43d78b5fe562de3d7777530865a3ae63f4e04920c424991364
+                image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:0df1d7bc0d437207db49eed60b5b3c5659c72adb11665d08f98034ddd2935d17
                 name: admission-webhook-controller
                 ports:
                 - containerPort: 9443
