@@ -20,7 +20,7 @@ policy-controller:
     name: webhook
     image:
       repository: registry.redhat.io/rhtas/policy-controller-rhel9
-      version: sha256:97d0f4b351308b3656b48f0497272b21625e20b3cf9dd436f5773e63258647ce
+      version: sha256:d67e6b6eeb1fb4acf613c250ef5e549b970314f2ccf552860c8b39d116188a08
       pullPolicy: IfNotPresent
     env: {}
     envFrom: {}
