@@ -1,6 +1,8 @@
 # Build the admission-webhook-controller binary
-FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467 AS admission-webhook-controller
+FROM registry.redhat.io/ubi9/go-toolset:9.6@sha256:a90b4605b47c396c74de55f574d0f9e03b24ca177dec54782f86cdf702c97dbc AS admission-webhook-controller
 WORKDIR /opt/app-root/src/
+ENV GOEXPERIMENT=strictfipsruntime
+ENV CGO_ENABLED=1
 
 COPY go.mod go.mod
 COPY go.sum go.sum
