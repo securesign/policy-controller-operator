@@ -4,15 +4,11 @@ policy-controller:
     cosignPub: ""
     webhookName: "policy.rhtas.com"
     webhookTimeoutSeconds: {}
-      # mutating: 10
-      # validating: 10
-
+    # mutating: 10
+    # validating: 10
   installCRDs: true
-
   imagePullSecrets: []
-
   loglevel: info
-
   webhook:
     customLabels: {}
     configData: {}
@@ -20,16 +16,16 @@ policy-controller:
     name: webhook
     image:
       repository: registry.redhat.io/rhtas/policy-controller-rhel9
-      version: sha256:d67e6b6eeb1fb4acf613c250ef5e549b970314f2ccf552860c8b39d116188a08
+      version: sha256:78464f0f7abce51611a71e0605e69493d0e7662cc64abd1b61a2c060293287d0
       pullPolicy: IfNotPresent
     env: {}
     envFrom: {}
-      # configmaps:
-      #   - mycm1
-      #   - mycm2
-      # secrets:
-      #   - mys1
-      #   - mys2
+    # configmaps:
+    #   - mycm1
+    #   - mycm2
+    # secrets:
+    #   - mys1
+    #   - mys2
     extraArgs:
       webhook-name: policy.rhtas.com
       mutating-webhook-name: defaulting.clusterimagepolicy.rhtas.com
@@ -48,7 +44,7 @@ policy-controller:
     failurePolicy: Fail
     podAnnotations: {}
     podSecurityContext:
-      enabled: false 
+      enabled: false
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
       runAsUser: 1000
@@ -67,7 +63,7 @@ policy-controller:
       create: true
       name: ""
     service:
-      annotations: 
+      annotations:
         helm.sh/resource-policy: keep
       type: ClusterIP
       port: 443
@@ -86,11 +82,10 @@ policy-controller:
       defaulting: "defaulting.clusterimagepolicy.rhtas.com"
       validating: "validating.clusterimagepolicy.rhtas.com"
     webhookTimeoutSeconds: {}
-      # defaulting: 10
-      # validating: 10
+    # defaulting: 10
+    # validating: 10
     priorityClass: ""
     automountServiceAccountToken: true
-
   leasescleanup:
     priorityClass: ""
     image:
@@ -113,7 +108,6 @@ policy-controller:
       #   drop:
       #     - ALL
     automountServiceAccountToken: true
-
   ## common node selector for all the pods
   commonNodeSelector: {}
   #  key1: value1
