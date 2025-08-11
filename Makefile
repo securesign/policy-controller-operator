@@ -64,6 +64,11 @@ CONTAINER_TOOL ?= docker
 #   false - deploy with the generic Kubernetes overlay in config/deploy
 OPENSHIFT ?= true
 
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
 .PHONY: all
 all: docker-build
 
