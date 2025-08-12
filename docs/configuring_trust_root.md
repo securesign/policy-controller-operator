@@ -8,6 +8,7 @@ It covers three scenarios:
 ## Prerequisites
 Before proceeding, ensure you have the following:
 - A running RHTAS instance (Red Hat Trusted Artifact Signer)
+- A running policy controller operator instance
 - A running Policy Controller instance
 - Required CLI tools installed:
     - oc

@@ -4,10 +4,10 @@ This document will guide you through configuring a basic Policy Controller Clust
 ## Prerequisites
 Before proceeding, ensure you have the following:
 - A running RHTAS instance (Red Hat Trusted Artifact Signer)
+- A running policy controller operator instance
 - A running Policy Controller instance
 - Required CLI tools installed:
     - oc
-    - curl
 
 ## Configuring a basic Cluster Image Policy resource
 1. Grab Fulcio & Rekor URLs from your RHTAS install
