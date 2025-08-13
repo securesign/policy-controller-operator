@@ -8,4 +8,4 @@ The RHTAS (Red Hat Trusted Artifact Signer) Policy Controller Operator Documenta
 
 ## Refs
 - [Sigstore Policy Controller Documentation](https://docs.sigstore.dev/policy-controller/overview/)
-- [Sisgtore Policy Controller helm charts Documentation](https://github.com/sigstore/helm-charts/tree/main/charts/policy-controller)
+- [Sigstore Policy Controller helm charts Documentation](https://github.com/sigstore/helm-charts/tree/main/charts/policy-controller)
