@@ -46,26 +46,34 @@ Before proceeding, ensure you have the following:
     ```
 
 ## Configuring TrustRoot for ‘bring your own keys’
-1. Retrieve your keys and certificates  
-    Get the Fulcio certificate chain, TSA certificate chain (if applicable), CT log public key, and Rekor public key from the RHTAS instance you installed.
+1. Grab Fulcio, Rekor, CTLog and TSA URLs from your RHTAS install
     ```sh
     export RHTAS_INSTALL_NAMESPACE=<rhtas-install-namespace>
+    export FULCIO_URL="$(oc -n "$RHTAS_INSTALL_NAMESPACE" get fulcio -o jsonpath='{.items[0].status.url}')"
+    export CTLOG_URL="http://ctlog.$RHTAS_INSTALL_NAMESPACE.svc.cluster.local"
+    export REKOR_URL="$(oc -n "$RHTAS_INSTALL_NAMESPACE" get rekor -o jsonpath='{.items[0].status.url}')"
+    export TSA_URL="$(oc -n "$RHTAS_INSTALL_NAMESPACE" get timestampAuthorities -o jsonpath='{.items[0].status.url}')"
+    ```
+
+2. Retrieve your keys and certificates  
+    Get the Fulcio certificate chain, TSA certificate chain (if applicable), CT log public key, and Rekor public key from the RHTAS instance you installed.
+    ```sh
     export SECRET_DATA=$(oc -n "$RHTAS_INSTALL_NAMESPACE" get secret <secret-name> -o jsonpath='{.data.<key>}')
     ```
 
-2. Base64-encode the secret data  
+3. Base64-encode the secret data  
     Encode the retrieved secret data
     ```sh
     echo $SECRET_DATA | base64 -w0
     ```
 
-3. Create or Apply the TrustRoot CR (Cluster-Scoped)  
+4. Create or Apply the TrustRoot CR (Cluster-Scoped)  
     Use the template below to define your TrustRoot
     ```sh
     apiVersion: policy.sigstore.dev/v1alpha1
     kind: TrustRoot
     metadata:
-      name: my-sigstore-keys
+      name: trust-root
     spec:
       sigstoreKeys:
         certificateAuthorities:
@@ -130,7 +138,7 @@ Before proceeding, ensure you have the following:
     apiVersion: policy.sigstore.dev/v1alpha1
     kind: TrustRoot
     metadata:
-      name: my-repository-serialized
+      name: trust-root
     spec:
       repository:
         root: |-
