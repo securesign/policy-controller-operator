@@ -80,8 +80,8 @@ Before proceeding, ensure you have the following:
         - subject:
             organization: fulcio-organization
             commonName: fulcio-common-name
-        uri: https://fulcio.fulcio-system.svc
-        certChain: |-
+          uri: https://fulcio.fulcio-system.svc
+          certChain: |-
             FULCIO_CERT_CHAIN
         ctLogs:
         - baseURL: https://ctfe.example.com
