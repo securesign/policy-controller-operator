@@ -46,4 +46,20 @@ NOTE:
 * TUF is disabled by default (disable-tuf: true) to prevent the policy controller from trusting the Sigstore public good instance, which could allow untrusted resources to be deployed.
 * When deploying an unreleased version of the policy controller, run `make dev-images` to update the image registry coordinates to quay.io before building.
 
+## Sample Namespace
+Below is an example namespace configuration that works with the policy controller definition shown above:
+
+  ```sh
+  cat <<EOF | kubectl apply -f -
+  apiVersion: v1
+  kind: Namespace
+  metadata:
+    labels:
+      policy.rhtas.com/include: "true"
+    name: policy-controller-test
+  EOF
+  ```
+
+The `policy.rhtas.com/include: "true"` label marks this namespace for inclusion in policy controller operations. Any namespace with this label will be subject to the policies defined by cluster image policies.
+
 For more configuration options please visit the upstream helm charts: https://github.com/sigstore/helm-charts/tree/main/charts/policy-controller
