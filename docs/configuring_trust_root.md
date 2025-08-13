@@ -61,13 +61,11 @@ Before proceeding, ensure you have the following:
     export SECRET_DATA=$(oc -n "$RHTAS_INSTALL_NAMESPACE" get secret <secret-name> -o jsonpath='{.data.<key>}')
     ```
 
-3. Base64-encode the secret data  
-    Encode the retrieved secret data
-    ```sh
-    echo $SECRET_DATA | base64 -w0
-    ```
+    NOTE:
+    - Kubernetes/OCP Secrets store values in `.data` as base64. The `oc ... -o jsonpath='{.data.<key>}'` command returns that base64 string already.
+    - Use this value directly in the TrustRoot (do NOT base64-encode it again).
 
-4. Create or Apply the TrustRoot CR (Cluster-Scoped)  
+3. Create or Apply the TrustRoot CR (Cluster-Scoped)  
     Use the template below to define your TrustRoot
     ```sh
     apiVersion: policy.sigstore.dev/v1alpha1
