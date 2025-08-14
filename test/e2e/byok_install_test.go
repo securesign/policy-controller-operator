@@ -110,6 +110,16 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		}
 
 		Expect(e2e_utils.InjectCAIntoDeployment(ctx, k8sClient, e2e_utils.DeploymentName, e2e_utils.InstallNamespace)).To(Succeed())
+		Eventually(func() (bool, error) {
+			cm := &corev1.ConfigMap{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "trusted-ca-bundle"}, cm)
+			if err != nil {
+				return false, err
+			}
+			bundle, ok := cm.Data["ca-bundle.crt"]
+			return ok && len(bundle) > 0, nil
+		}).Should(BeTrue(), "trusted-ca-bundle never got its ca-bundle.crt")
+
 		dep := &appsv1.Deployment{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: e2e_utils.DeploymentName}, dep)).To(Succeed(), "failed to read Deployment after CA injection")
 
