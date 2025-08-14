@@ -62,4 +62,49 @@ Below is an example namespace configuration that works with the policy controlle
 
 The `policy.rhtas.com/include: "true"` label marks this namespace for inclusion in policy controller operations. Any namespace with this label will be subject to the policies defined by cluster image policies.
 
+## Custom Certificate Authority bundle
+When deploying the Policy Controller operator, you may need to configure it to trust custom Certificate Authorities (CAs) or self-signed certificates. This is often necessary to ensure secure communication between components or with an external OIDC service.
+
+Before configuring the Policy Controller operator to trust custom CAs, you must first create a ConfigMap containing your CA bundle in the same namespace where the Policy Controller will be deployed.
+
+```sh
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-ca-bundle
+data:
+  ca-bundle.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIC... (certificate content)
+    -----END CERTIFICATE-----
+```
+
+Once the ConfigMap is created, you can mount the CA bundle into the Policy Controller by setting the `spec.policy-controller.webhook.registryCaBundle` field.
+
+```sh
+apiVersion: rhtas.charts.redhat.com/v1alpha1
+kind: PolicyController
+metadata:
+  name: policycontroller-sample
+spec:
+  policy-controller:
+    webhook:
+      registryCaBundle:
+        name: <configMap-name>
+        key: <ca-bundle-key>
+```
+
+You can also add environment variables, such as SSL_CERT_DIR, to the configuration:
+```sh
+apiVersion: rhtas.charts.redhat.com/v1alpha1
+kind: PolicyController
+metadata:
+  name: policycontroller-sample
+spec:
+  policy-controller:
+    webhook:
+      env:
+        SSL_CERT_DIR: <ssl-dir>
+```
+
 For more configuration options please visit the upstream helm charts: https://github.com/sigstore/helm-charts/tree/main/charts/policy-controller
