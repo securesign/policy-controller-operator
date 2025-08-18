@@ -4,7 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
-    containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:58d225170cd42e2a1dadaf7bf170c2f9cc33c7e3cfac9be87e80a8c95f0db83e
+    containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:47dbd3ea6fd88503ee4335cc43df9be2d4829d7c285fcb54b401dcc31cfe450b
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
