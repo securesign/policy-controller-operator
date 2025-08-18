@@ -18,7 +18,7 @@ metadata:
     operators.openshift.io/valid-subscription: '["Red Hat Trusted Artifact Signer"]'
     repository: https://github.com/securesign/policy-controller-operator
     support: Red Hat
-  name: policy-controller-operator.v1.0.0
+  name: policy-controller-operator.v0.0.1-techpreview
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -79,7 +79,7 @@ spec:
   maintainers:
   - email: japower@redhat.com
     name: Jason Power
-  maturity: stable
+  maturity: tech-preview
   provider:
     name: Red Hat
-  version: 1.0.0
+  version: 0.0.1-techpreview
