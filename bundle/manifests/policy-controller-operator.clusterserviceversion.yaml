@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:47dbd3ea6fd88503ee4335cc43df9be2d4829d7c285fcb54b401dcc31cfe450b
-    createdAt: "2025-08-18T14:10:07Z"
+    createdAt: "2025-08-18T14:52:34Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
@@ -106,7 +106,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/securesign/policy-controller-operator
     support: Red Hat
-  name: policy-controller-operator.v1.0.0
+  name: policy-controller-operator.v0.0.1-techpreview
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -375,10 +375,10 @@ spec:
   maintainers:
   - email: japower@redhat.com
     name: Jason Power
-  maturity: stable
+  maturity: tech-preview
   provider:
     name: Red Hat
-  version: 1.0.0
+  version: 0.0.1-techpreview
   webhookdefinitions:
   - admissionReviewVersions:
     - v1
