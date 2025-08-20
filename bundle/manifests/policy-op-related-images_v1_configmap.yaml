@@ -1,7 +1,7 @@
 apiVersion: v1
 data:
   RELATED_IMAGE_OSE_CLI: registry.redhat.io/openshift4/ose-cli@sha256:2bc6e85e12269f8fe42bebcc69587714715bcf69c60a541096a07683cc158fa5
-  RELATED_IMAGE_POLICY_CONTROLLER: registry.redhat.io/rhtas/policy-controller-rhel9@sha256:0f850b94669731fe65a3c7343170ab60f339f10698c3f104609e568fcdcf29db
+  RELATED_IMAGE_POLICY_CONTROLLER: registry.redhat.io/rhtas/policy-controller-rhel9@sha256:6da95e6c25e916a65c1b845cc16e396a8bc135436366950ca71c3bbb053da9e6
 kind: ConfigMap
 metadata:
   name: policy-op-related-images
