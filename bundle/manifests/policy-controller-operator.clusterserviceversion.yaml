@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:2a912eea75369043bd474d1465188d5272ea9ce464298e504a3c542dc2da7775
-    createdAt: "2025-08-20T10:23:19Z"
+    createdAt: "2025-08-20T10:26:53Z"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
