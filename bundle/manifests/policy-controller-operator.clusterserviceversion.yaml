@@ -267,6 +267,11 @@ spec:
                 - --leader-election-id=policy-controller-operator
                 - --health-probe-bind-address=:8081
                 image: registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:207362680219baca6bd8e0e0d23a6ce904735971b872ad8ff03dc82b1b8c2c73
+                env:
+                - name: RELATED_IMAGE_POLICY_CONTROLLER
+                  value: registry.redhat.io/rhtas/policy-controller-rhel9@sha256:0f850b94669731fe65a3c7343170ab60f339f10698c3f104609e568fcdcf29db
+                - name: RELATED_IMAGE_OSE_CLI
+                  value: registry.redhat.io/openshift4/ose-cli@sha256:2bc6e85e12269f8fe42bebcc69587714715bcf69c60a541096a07683cc158fa5
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -378,6 +383,11 @@ spec:
   maturity: tech-preview
   provider:
     name: Red Hat
+  relatedImages:
+  - image: registry.redhat.io/rhtas/policy-controller-rhel9@sha256:0f850b94669731fe65a3c7343170ab60f339f10698c3f104609e568fcdcf29db
+    name: policy-controller
+  - image: registry.redhat.io/openshift4/ose-cli@sha256:2bc6e85e12269f8fe42bebcc69587714715bcf69c60a541096a07683cc158fa5
+    name: ose-cli
   version: 0.0.1-techpreview
   webhookdefinitions:
   - admissionReviewVersions:
