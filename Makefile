@@ -96,7 +96,7 @@ run: helm-operator ## Run against the configured Kubernetes cluster in ~/.kube/c
 	$(HELM_OPERATOR) run
 
 .PHONY: docker-build
-docker-build: unit-test  ## Run tests then build docker image with the manager.
+docker-build: unit-test generate-related-images  ## Run tests then build docker image with the manager.
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
 .PHONY: docker-build-skip-test
@@ -209,7 +209,7 @@ endif
 endif
 
 .PHONY: bundle
-bundle: kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
+bundle: kustomize operator-sdk generate-related-images ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
@@ -272,3 +272,28 @@ unit-test:
 e2e-test:
 	cd test && go test -count=1 -v ./e2e
 
+# Generate related images
+.PHONY: yq
+YQ ?= $(LOCALBIN)/yq
+YQ_VERSION ?= v4.43.1
+yq: ## Download yq locally if necessary.
+ifeq (,$(wildcard $(YQ)))
+ifeq (, $(shell which yq 2>/dev/null))
+	@{ \
+	set -e ;\
+	mkdir -p $(dir $(YQ)) ;\
+	curl -sSLo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(OS)_$(ARCH) ;\
+	chmod +x $(YQ) ;\
+	}
+else
+YQ = $(shell which yq)
+endif
+endif
+
+RELATED_IMAGE_POLICY_CONTROLLER_DIGEST ?= $(shell $(YQ) -r '.["policy-controller"].webhook.image.version' helm-charts/policy-controller-operator/values.yaml)
+RELATED_IMAGE_OSE_CLI_DIGEST ?= $(shell $(YQ) -r '.["policy-controller"].leasescleanup.image.version' helm-charts/policy-controller-operator/values.yaml)
+
+.PHONY: generate-related-images
+generate-related-images: yq
+	echo "RELATED_IMAGE_POLICY_CONTROLLER=registry.redhat.io/rhtas/policy-controller-rhel9@$(RELATED_IMAGE_POLICY_CONTROLLER_DIGEST)" > config/manager/images.env
+	echo "RELATED_IMAGE_OSE_CLI=registry.redhat.io/openshift4/ose-cli@$(RELATED_IMAGE_OSE_CLI_DIGEST)" >> config/manager/images.env
