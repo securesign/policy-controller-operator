@@ -31,3 +31,4 @@ charts/policy-controller/templates/webhook/cleanup-leases.yaml
 charts/policy-controller/templates/webhook/role_webhook.yaml
 charts/policy-controller/templates/webhook/rolebinding_webhook.yaml
 charts/policy-controller/templates/webhook/configmap.yaml
+charts/policy-controller/templates/webhook/clusterrole_webhook.yaml
