@@ -40,4 +40,8 @@ rules:
     resources: ["trustroots"]
     verbs: ["get", "list"]
 
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+
 # Base: https://github.com/sigstore/helm-charts/blob/main/charts/policy-controller/templates/webhook/role_webhook.yaml
