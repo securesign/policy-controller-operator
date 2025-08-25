@@ -5,7 +5,7 @@ resources:
 - manager.yaml
 
 images:
-- digest: sha256:a4c1a6ec0a96eaca8be35801fac8a862261ff5b1cb733771baedf9565c462b9c
+- digest: sha256:4c7032dcca6fcc3abacff503c53c330ce29918d1d4418b31468660ba4d4d38aa
   name: controller
   newName: registry.redhat.io/rhtas/policy-controller-rhel9-operator
 
