@@ -36,7 +36,7 @@ var (
 var _ = Describe("policy-controller-operator byok", Ordered, func() {
 	var err error
 
-	BeforeAll(func() {
+	BeforeAll(func(ctx SpecContext) {
 		policyControllerBYOKCrABSPath, err = filepath.Abs(policyControllerBYOKCrPath)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -54,7 +54,7 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		By("applying the operator bundle: " + policyControllerBYOKCrABSPath)
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, nil, policyControllerBYOKCrABSPath)).To(Succeed())
 
-		DeferCleanup(func() {
+		DeferCleanup(func(ctx SpecContext) {
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, "test-pod", byokTestNS)).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}, byokTestNS, "")).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, "byok-install-trust-root", "")).To(Succeed())
@@ -63,7 +63,7 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		})
 	})
 
-	It("creates all required resources", func() {
+	It("creates all required resources", func(ctx SpecContext) {
 		type resource struct {
 			name string
 			obj  client.Object
@@ -88,19 +88,19 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		}
 	})
 
-	It("eventually has the deployment ready", func() {
+	It("eventually has the deployment ready", func(ctx SpecContext) {
 		dep := &appsv1.Deployment{}
 		e2e_utils.ExpectExists(e2e_utils.DeploymentName, e2e_utils.InstallNamespace, dep, k8sClient, ctx)
 
 		desired := *dep.Spec.Replicas
-		Eventually(func() int32 {
+		Eventually(func(ctx SpecContext) int32 {
 			k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: e2e_utils.DeploymentName}, dep)
 			Expect(err).ToNot(HaveOccurred())
 			return dep.Status.ReadyReplicas
-		}).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, e2e_utils.DeploymentName)
+		}).WithContext(ctx).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, e2e_utils.DeploymentName)
 	})
 
-	It("injects the CA bundle and the Deployment rolls out", func() {
+	It("injects the CA bundle and the Deployment rolls out", func(ctx SpecContext) {
 		inject, err := strconv.ParseBool(strings.TrimSpace(e2e_utils.InjectCA()))
 		if err != nil {
 			panic(fmt.Errorf("invalid value for INJECT_CA: %w", err))
@@ -110,7 +110,7 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		}
 
 		Expect(e2e_utils.InjectCAIntoDeployment(ctx, k8sClient, e2e_utils.DeploymentName, e2e_utils.InstallNamespace)).To(Succeed())
-		Eventually(func() (bool, error) {
+		Eventually(func(ctx SpecContext) (bool, error) {
 			cm := &corev1.ConfigMap{}
 			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "trusted-ca-bundle"}, cm)
 			if err != nil {
@@ -118,21 +118,21 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 			}
 			bundle, ok := cm.Data["ca-bundle.crt"]
 			return ok && len(bundle) > 0, nil
-		}).Should(BeTrue(), "trusted-ca-bundle never got its ca-bundle.crt")
+		}).WithContext(ctx).Should(BeTrue(), "trusted-ca-bundle never got its ca-bundle.crt")
 
 		dep := &appsv1.Deployment{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: e2e_utils.DeploymentName}, dep)).To(Succeed(), "failed to read Deployment after CA injection")
 
 		desired := *dep.Spec.Replicas
-		Eventually(func() (int32, error) {
+		Eventually(func(ctx SpecContext) (int32, error) {
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: e2e_utils.DeploymentName}, dep); err != nil {
 				return 0, err
 			}
 			return dep.Status.ReadyReplicas, nil
-		}).Should(Equal(desired), "timed out waiting for %d Ready replicas in Deployment %q", desired, e2e_utils.DeploymentName)
+		}).WithContext(ctx).Should(Equal(desired), "timed out waiting for %d Ready replicas in Deployment %q", desired, e2e_utils.DeploymentName)
 	})
 
-	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func() {
+	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func(ctx SpecContext) {
 		trustedrootValues, err := e2e_utils.ParseTufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		byokRenderedTrustRoot, err = e2e_utils.RenderTemplate(trustRootBYOKCrABSPath, map[string]string{
@@ -154,7 +154,7 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedTrustRoot, "")).To(Succeed())
 
-		Eventually(func() (string, error) {
+		Eventually(func(ctx SpecContext) (string, error) {
 			cm := &corev1.ConfigMap{}
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
 				return "", err
@@ -164,10 +164,10 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 				return "", fmt.Errorf("key not present yet")
 			}
 			return val, nil
-		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the byok-install-trust-root key")
+		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the byok-install-trust-root key")
 	})
 
-	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func() {
+	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func(ctx SpecContext) {
 
 		byokRenderedClusteImagePolicy, err = e2e_utils.RenderTemplate(clusterImagePolicyBYOKCrABSPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
@@ -179,7 +179,7 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedClusteImagePolicy, "")).To(Succeed())
 
-		Eventually(func() (string, error) {
+		Eventually(func(ctx SpecContext) (string, error) {
 			cm := &corev1.ConfigMap{}
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
 				return "", err
@@ -189,32 +189,32 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 				return "", fmt.Errorf("key not present yet")
 			}
 			return val, nil
-		}).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the byok-install-cluster-image-policy key")
+		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the byok-install-cluster-image-policy key")
 	})
 
-	It("should create a test namespace", func() {
+	It("should create a test namespace", func(ctx SpecContext) {
 		Expect(e2e_utils.CreateTestNamespace(ctx, k8sClient, byokTestNS)).NotTo(HaveOccurred())
 	})
 
-	It("should reject pod creation in a watched namespace and sign the image", func() {
+	It("should reject pod creation in a watched namespace and sign the image", func(ctx SpecContext) {
 		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
 		e2e_utils.VerifyByCosign(ctx, e2e_utils.PrepareImage(ctx, byokTestImageEnv))
 	})
 
-	It("should reject pod creation in a watched namespace and attach a provenance", func() {
+	It("should reject pod creation in a watched namespace and attach a provenance", func(ctx SpecContext) {
 		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
 		e2e_utils.AttachProvenance(ctx, e2e_utils.PrepareImage(ctx, byokTestImageEnv))
 	})
 
-	It("should reject pod creation in a watched namespace and attach an SBOM", func() {
+	It("should reject pod creation in a watched namespace and attach an SBOM", func(ctx SpecContext) {
 		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
 		e2e_utils.AttachSBOM(ctx, e2e_utils.PrepareImage(ctx, byokTestImageEnv))
 	})
 
-	It("should accept the pod", func() {
+	It("should accept the pod", func(ctx SpecContext) {
 		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, e2e_utils.PrepareImage(ctx, byokTestImageEnv))).NotTo(HaveOccurred())
 	})
 })

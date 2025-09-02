@@ -37,7 +37,7 @@ func EnvOrDefault(env string, defualt string) string {
 func ExpectExists(name, namespace string, obj client.Object, k8sClient client.Client, ctx context.Context) {
 	Eventually(func() error {
 		return k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, obj)
-	}, "10s", "1s").Should(Succeed(), "expected %T %q to exist", obj, name)
+	}).WithContext(ctx).Should(Succeed(), "expected %T %q to exist", obj, name)
 }
 
 func RenderTemplate(path string, data interface{}) ([]byte, error) {

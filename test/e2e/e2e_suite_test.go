@@ -33,7 +33,8 @@ func init() {
 func TestE2e(t *testing.T) {
 	RegisterFailHandler(Fail)
 	log.SetLogger(GinkgoLogr)
-	SetDefaultEventuallyTimeout(3 * time.Minute)
+	SetDefaultEventuallyTimeout(time.Duration(3) * time.Minute)
+	EnforceDefaultTimeoutsWhenUsingContexts()
 	RunSpecs(t, "Policy Controller E2E Suite")
 
 	format.MaxLength = 0

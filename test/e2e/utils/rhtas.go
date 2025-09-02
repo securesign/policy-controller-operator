@@ -271,50 +271,65 @@ func TufMirrorFS(ctx context.Context) ([]byte, error) {
 	}
 
 	var buf bytes.Buffer
-	if err := tarDir(tufRootDir, &buf); err != nil {
+	if err := TarGZ(tufRootDir, &buf); err != nil {
 		return nil, fmt.Errorf("tarDir: %w", err)
 	}
 	return buf.Bytes(), nil
 }
 
-func tarDir(root string, dst io.Writer) error {
-	gw := gzip.NewWriter(dst)
-	defer gw.Close()
+func TarGZ(src string, w io.Writer) error {
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("unable to tar files - %v", err.Error())
+	}
+
+	gw := gzip.NewWriter(w)
+	defer func() { _ = gw.Close() }()
 
 	tw := tar.NewWriter(gw)
-	defer tw.Close()
+	defer func() { _ = tw.Close() }()
 
-	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	return filepath.Walk(src, func(p string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		info, err := d.Info()
-		if err != nil {
-			return err
+		// include directories so extractors don’t complain, skip other non-regular types
+		if fi.IsDir() {
+			hdr, err := tar.FileInfoHeader(fi, "")
+			if err != nil {
+				return err
+			}
+			rel, err := filepath.Rel(src, p)
+			if err != nil {
+				return err
+			}
+			if rel == "." {
+				// root dir entry not necessary
+				return nil
+			}
+			hdr.Name = rel + "/"
+			return tw.WriteHeader(hdr)
 		}
 
-		hdr, err := tar.FileInfoHeader(info, "")
-		if err != nil {
-			return err
-		}
-
-		rel, _ := filepath.Rel(root, path)
-		hdr.Name = filepath.ToSlash(rel)
-
-		if d.Type()&fs.ModeSymlink != 0 {
-			hdr.Linkname, _ = os.Readlink(path)
-		}
-
-		if err = tw.WriteHeader(hdr); err != nil {
-			return err
-		}
-
-		if !info.Mode().IsRegular() {
+		if !fi.Mode().IsRegular() {
 			return nil
 		}
 
-		f, err := os.Open(path)
+		hdr, err := tar.FileInfoHeader(fi, "")
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, p)
+		if err != nil {
+			return err
+		}
+		hdr.Name = rel
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		f, err := os.Open(p)
 		if err != nil {
 			return err
 		}
