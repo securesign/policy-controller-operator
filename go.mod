@@ -1,6 +1,6 @@
 module github.com/securesign/policy-controller-operator
 
-go 1.25.0
+go 1.24.0
 
 require (
 	github.com/google/go-containerregistry v0.20.6
@@ -34,7 +34,7 @@ require (
 	github.com/go-openapi/swag/typeutils v0.24.0 // indirect
 	github.com/go-openapi/swag/yamlutils v0.24.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/letsencrypt/boulder v0.20250902.0 // indirect
+	github.com/letsencrypt/boulder v0.20250819.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
