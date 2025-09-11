@@ -51,7 +51,7 @@ endif
 OPERATOR_SDK_VERSION ?= v1.39.2
 
 # Image URL to use all building/pushing image targets
-IMG ?= registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:d863768ca2d66a60a3ae9d2a597af18ca7bbdab13439c46370284c27d96eb0e3
+IMG ?= registry.redhat.io/rhtas/policy-controller-rhel9-operator@sha256:3d87f51cb66c393dc4b5b40923e5e82c79647703e77008b71b5e34f8f0001fb9
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
 # Be aware that the target commands are only tested with Docker which is
