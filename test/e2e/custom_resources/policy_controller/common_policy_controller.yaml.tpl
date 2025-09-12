@@ -2,7 +2,7 @@ apiVersion: rhtas.charts.redhat.com/v1alpha1
 kind: PolicyController
 metadata:
   name: policycontroller-sample
-  namespace: policy-controller-operator
+  namespace: {{ .NS }}
 spec:
   policy-controller:
     cosign:
