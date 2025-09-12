@@ -18,17 +18,21 @@ import (
 )
 
 const (
-	policyControllerSTUFCrPath   = "custom_resources/serialized_tuf_root/policy_controller.yaml.tpl"
-	trustRootSTUFCrPath          = "custom_resources/serialized_tuf_root/trust_root.yaml.tpl"
-	clusterimagepolicySTUFCrPath = "custom_resources/serialized_tuf_root/cluster_image_policy.yaml.tpl"
+	policyControllerSTUFCrPath   = "custom_resources/policy_controller/common_policy_controller.yaml.tpl"
+	trustRootSTUFCrPath          = "custom_resources/trust_roots/stuf_trust_root.yaml.tpl"
+	clusterimagepolicySTUFCrPath = "custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
 	stufTestNS                   = "pco-e2e-stuf"
 	stufTestImageEnv             = "STUF_TEST_IMAGE"
+	stufTrustRootRef             = "serialized-tuf-install-trust-root"
+	stufCIPName                  = "serialized-tuf-install-cluster-image-policy"
 )
 
 var (
-	policyControllerSTUFCrABSPath   = ""
-	trustRootSTUFCrABSPath          = ""
-	clusterImagePolicySTUFCrABSPath = ""
+	policyControllerSTUFCrABSPath   string
+	trustRootSTUFCrABSPath          string
+	clusterImagePolicySTUFCrABSPath string
+	stufTestImage                   string
+	stufRenderedPolicyontroller     []byte
 	stufRenderedTrustRoot           []byte
 	stufRenderedClusteImagePolicy   []byte
 )
@@ -51,14 +55,20 @@ var _ = Describe("policy-controller-operator serializd tuf root", Ordered, func(
 			ObjectMeta: metav1.ObjectMeta{Name: e2e_utils.InstallNamespace},
 		})).To(SatisfyAny(Succeed(), MatchError(ContainSubstring("already exists"))))
 
-		By("applying the operator bundle: " + policyControllerSTUFCrABSPath)
-		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, nil, policyControllerSTUFCrABSPath)).To(Succeed())
+		By("applying the operator bundle: " + policyControllerSTUFCrPath)
+		stufRenderedPolicyontroller, err = e2e_utils.RenderTemplate(policyControllerSTUFCrPath, map[string]string{
+			"NS": e2e_utils.InstallNamespace,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, stufRenderedPolicyontroller, "")).To(Succeed())
+
+		stufTestImage = e2e_utils.PrepareImage(ctx, stufTestImageEnv)
 
 		DeferCleanup(func(ctx SpecContext) {
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, "test-pod", stufTestNS)).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}, stufTestNS, "")).To(Succeed())
-			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, "serialized-tuf-install-trust-root", "")).To(Succeed())
-			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, "serialized-tuf-install-cluster-image-policy", "")).To(Succeed())
+			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, stufCIPName, "")).To(Succeed())
+			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, stufTrustRootRef, "")).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "rhtas.charts.redhat.com", Version: "v1alpha1", Kind: "PolicyController"}, "policycontroller-sample", e2e_utils.InstallNamespace)).To(Succeed())
 		})
 	})
@@ -151,12 +161,12 @@ var _ = Describe("policy-controller-operator serializd tuf root", Ordered, func(
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
 				return "", err
 			}
-			val, ok := cm.Data["serialized-tuf-install-trust-root"]
+			val, ok := cm.Data[stufTrustRootRef]
 			if !ok {
 				return "", fmt.Errorf("key not present yet")
 			}
 			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the serialized-tuf-install-trust-root key")
+		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", stufTrustRootRef)
 	})
 
 	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func(ctx SpecContext) {
@@ -166,7 +176,9 @@ var _ = Describe("policy-controller-operator serializd tuf root", Ordered, func(
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
-			"TEST_IMAGE":          e2e_utils.PrepareImage(ctx, stufTestImageEnv),
+			"TEST_IMAGE":          stufTestImage,
+			"TRUST_ROOT_REF":      stufTrustRootRef,
+			"CIP_NAME":            stufCIPName,
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, stufRenderedClusteImagePolicy, "")).To(Succeed())
@@ -176,37 +188,53 @@ var _ = Describe("policy-controller-operator serializd tuf root", Ordered, func(
 			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
 				return "", err
 			}
-			val, ok := cm.Data["serialized-tuf-install-cluster-image-policy"]
+			val, ok := cm.Data[stufCIPName]
 			if !ok {
 				return "", fmt.Errorf("key not present yet")
 			}
 			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the serialized-tuf-install-cluster-image-policy key")
+		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", stufCIPName)
 	})
 
 	It("should create a test namespace", func(ctx SpecContext) {
 		Expect(e2e_utils.CreateTestNamespace(ctx, k8sClient, stufTestNS)).NotTo(HaveOccurred())
+
+		Eventually(func(g Gomega, ctx SpecContext) {
+			ns := &corev1.Namespace{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: stufTestNS}, ns)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(ns.Status.Phase).To(Equal(corev1.NamespaceActive))
+		}).WithContext(ctx).Should(Succeed())
+	})
+
+	It("should reject controller creation in wrong namespace", func(ctx SpecContext) {
+		stufRenderedPolicyontroller, err = e2e_utils.RenderTemplate(policyControllerSTUFCrABSPath, map[string]string{
+			"NS": stufTestNS,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, stufRenderedPolicyontroller, "")).
+			To(MatchError(ContainSubstring(`PolicyController objects may only be created in the "policy-controller-operator" namespace`)))
 	})
 
 	It("should reject pod creation in a watched namespace and sign the image", func(ctx SpecContext) {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, e2e_utils.PrepareImage(ctx, stufTestImageEnv))).
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, stufTestImage)).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
-		e2e_utils.VerifyByCosign(ctx, e2e_utils.PrepareImage(ctx, stufTestImageEnv))
+		e2e_utils.VerifyByCosign(ctx, stufTestImage)
 	})
 
 	It("should reject pod creation in a watched namespace and attach a provenance", func(ctx SpecContext) {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, e2e_utils.PrepareImage(ctx, stufTestImageEnv))).
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, stufTestImage)).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
-		e2e_utils.AttachProvenance(ctx, e2e_utils.PrepareImage(ctx, stufTestImageEnv))
+		e2e_utils.AttachProvenance(ctx, stufTestImage)
 	})
 
 	It("should reject pod creation in a watched namespace and attach an SBOM", func(ctx SpecContext) {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, e2e_utils.PrepareImage(ctx, stufTestImageEnv))).
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, stufTestImage)).
 			To(MatchError(ContainSubstring(`admission webhook "policy.rhtas.com" denied the request`)))
-		e2e_utils.AttachSBOM(ctx, e2e_utils.PrepareImage(ctx, stufTestImageEnv))
+		e2e_utils.AttachSBOM(ctx, stufTestImage)
 	})
 
 	It("should accept the pod", func(ctx SpecContext) {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, e2e_utils.PrepareImage(ctx, stufTestImageEnv))).NotTo(HaveOccurred())
+		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, stufTestNS, stufTestImage)).NotTo(HaveOccurred())
 	})
 })
