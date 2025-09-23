@@ -29,7 +29,8 @@ LABEL io.k8s.display-name="Policy Controller operator container image for Red Ha
 LABEL io.openshift.tags="policy-controller-operator, Red Hat Trusted Artifact Signer."
 LABEL summary="Operator for the policy-controller-operator."
 LABEL com.redhat.component="policy-controller-operator"
-LABEL name="policy-controller-operator"
+LABEL name="rhtas/policy-controller-rhel9-operator"
+LABEL cpe="cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"
 
 ENV HOME=/opt/helm
 COPY watches.yaml ${HOME}/watches.yaml
