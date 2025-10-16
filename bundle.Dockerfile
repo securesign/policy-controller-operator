@@ -1,6 +1,6 @@
-ARG VERSION="0.0.1"
-ARG CHANNELS="tech-preview"
-ARG DEFAULT_CHANNEL="tech-preview"
+ARG VERSION="1.0.0"
+ARG CHANNELS="stable,stable-v1.0"
+ARG DEFAULT_CHANNEL="stable"
 ARG BUNDLE_OVERLAY="olm"
 ARG BUNDLE_GEN_FLAGS="-q --overwrite=false --version $VERSION --channels=$CHANNELS --default-channel=$DEFAULT_CHANNEL"
 ARG IMG
@@ -31,10 +31,15 @@ LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
 LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
 LABEL operators.operatorframework.io.bundle.metadata.v1=metadata/
 LABEL operators.operatorframework.io.bundle.package.v1=policy-controller-operator
-LABEL operators.operatorframework.io.bundle.channels.v1=alpha
+LABEL operators.operatorframework.io.bundle.channels.v1=stable,stable-v1.0
 LABEL operators.operatorframework.io.metrics.builder=operator-sdk-v1.39.2
 LABEL operators.operatorframework.io.metrics.mediatype.v1=metrics+v1
 LABEL operators.operatorframework.io.metrics.project_layout=helm.sdk.operatorframework.io/v1
+LABEL operators.openshift.io/valid-subscription="Red Hat Trusted Artifact Signer"
+
+# Labels for testing.
+LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
+LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
 
 LABEL maintainer="Red Hat, Inc."
 LABEL vendor="Red Hat, Inc."
@@ -51,7 +56,7 @@ LABEL com.redhat.component="policy-controller-operator-bundle"
 LABEL name="rhtas/policy-controller-operator-bundle"
 
 LABEL features.operators.openshift.io/cni="false"
-LABEL features.operators.openshift.io/disconnected="true"
+LABEL features.operators.openshift.io/disconnected="false"
 LABEL features.operators.openshift.io/fips-compliant="false"
 LABEL features.operators.openshift.io/proxy-aware="false"
 LABEL features.operators.openshift.io/cnf="false"
@@ -60,10 +65,6 @@ LABEL features.operators.openshift.io/tls-profiles="false"
 LABEL features.operators.openshift.io/token-auth-aws="false"
 LABEL features.operators.openshift.io/token-auth-azure="false"
 LABEL features.operators.openshift.io/token-auth-gcp="false"
-
-# Labels for testing.
-LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
-LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
 
 # Copy files to locations specified by labels.
 COPY --from=builder /tmp/bundle/manifests /manifests/
