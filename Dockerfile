@@ -1,3 +1,4 @@
+# test
 ## Build the admission-webhook-controller binary
 FROM registry.redhat.io/ubi9/go-toolset:9.6@sha256:7b1828de52c3bac600a71b81996bf748776a456181a45e2b329b39702cf6486f AS admission-webhook-controller
 WORKDIR /opt/app-root/src/
