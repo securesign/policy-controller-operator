@@ -5,6 +5,7 @@ ARG BUNDLE_OVERLAY="olm"
 ARG BUNDLE_GEN_FLAGS="-q --overwrite=false --version $VERSION --channels=$CHANNELS --default-channel=$DEFAULT_CHANNEL"
 ARG IMG
 
+FROM registry.redhat.io/openshift4/ose-cli-rhel9@sha256:1582ea693f35073e3316e2380a18227b78096ca7f4e1328f1dd8a2c423da26e9 AS oc-builder
 FROM registry.redhat.io/openshift4/ose-operator-sdk-rhel9@sha256:ff74412d980d64ad54061589e74b68675276adcd69717f5b5befbe6310c0fc62 AS builder
 
 ARG BUNDLE_GEN_FLAGS
@@ -16,6 +17,7 @@ COPY ./config/ ./config/
 COPY PROJECT .
 COPY hack/build-bundle.sh build-bundle.sh
 COPY helm-charts helm-charts
+COPY --from=oc-builder /usr/bin/oc /usr/bin/oc
 
 USER root
 
