@@ -1,6 +1,6 @@
 dependencies:
 - name: policy-controller
   repository: https://sigstore.github.io/helm-charts
-  version: 0.10.2
-digest: sha256:358f0dbe3dda7eeaeb08a0015cfffa81a8fdb7f4dde3a1ae487acea3a784dbab
-generated: "2025-07-23T16:07:31.743243421+01:00"
+  version: 0.10.6
+digest: sha256:69e5a6ec0be7fe09fd29b1dee04af6274e7e9665c002a705cbb1359b51229cfe
+generated: "2025-12-03T14:47:49.593182959Z"
