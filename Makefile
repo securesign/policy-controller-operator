@@ -272,28 +272,17 @@ unit-test:
 e2e-test:
 	cd test && go test -count=1 -v ./e2e
 
-# Generate related images
-.PHONY: yq
-YQ ?= $(LOCALBIN)/yq
-YQ_VERSION ?= v4.43.1
-yq: ## Download yq locally if necessary.
-ifeq (,$(wildcard $(YQ)))
-ifeq (, $(shell which yq 2>/dev/null))
-	@{ \
-	set -e ;\
-	mkdir -p $(dir $(YQ)) ;\
-	curl -sSLo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(OS)_$(ARCH) ;\
-	chmod +x $(YQ) ;\
-	}
-else
-YQ = $(shell which yq)
-endif
-endif
+# Generate related image
+FILE := helm-charts/policy-controller-operator/values.yaml
+RELATED_IMAGE_POLICY_CONTROLLER_DIGEST := $(shell \
+  sed -n '/^[[:space:]]*webhook:/,/^[[:space:]]*leasescleanup:/ { /^[[:space:]]*version:/ { s/^[[:space:]]*version:[[:space:]]*//; p; q } }' $(FILE) \
+)
 
-RELATED_IMAGE_POLICY_CONTROLLER_DIGEST ?= $(shell $(YQ) -r '.["policy-controller"].webhook.image.version' helm-charts/policy-controller-operator/values.yaml)
-RELATED_IMAGE_OSE_CLI_DIGEST ?= $(shell $(YQ) -r '.["policy-controller"].leasescleanup.image.version' helm-charts/policy-controller-operator/values.yaml)
+RELATED_IMAGE_OSE_CLI_DIGEST := $(shell \
+  sed -n '/^[[:space:]]*leasescleanup:/,/^[[:space:]]*commonNodeSelector:/ { /^[[:space:]]*version:/ { s/^[[:space:]]*version:[[:space:]]*//; p; q } }' $(FILE) \
+)
 
 .PHONY: generate-related-images
-generate-related-images: yq
+generate-related-images:
 	echo "RELATED_IMAGE_POLICY_CONTROLLER=registry.redhat.io/rhtas/policy-controller-rhel9@$(RELATED_IMAGE_POLICY_CONTROLLER_DIGEST)" > config/manager/images.env
 	echo "RELATED_IMAGE_OSE_CLI=registry.redhat.io/openshift4/ose-cli@sha256:$(RELATED_IMAGE_OSE_CLI_DIGEST)" >> config/manager/images.env

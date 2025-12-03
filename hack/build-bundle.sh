@@ -1,46 +1,67 @@
 #!/bin/bash
 set -e
 
-TOOLS="/tmp"
-YQ_VERSION=v4.44.3
-KUSTOMIZE_VERSION=v5.6.0
+KUSTOMIZATION_FILE="config/manager/kustomization.yaml"
 
-if [ -f "/cachi2/output/deps/generic/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" ]
-then
-  tar -xzf /cachi2/output/deps/generic/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz -C ${TOOLS}
-  KUSTOMIZE=${TOOLS}/kustomize
-else
-  curl -Lo ${TOOLS}/kustomize.tar.gz "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" && \
-  tar -xzf ${TOOLS}/kustomize.tar.gz -C ${TOOLS}
-  rm ${TOOLS}/kustomize.tar.gz
-  KUSTOMIZE=${TOOLS}/kustomize
-fi
-chmod +x ${KUSTOMIZE}
+if [ -n "$IMG" ]; then
+  if [[ "$IMG" == *"@"* ]]; then
+    IMG_NAME="${IMG%@*}"
+    IMG_DIGEST="${IMG#*@}"
 
-if [ -f "/cachi2/output/deps/generic/yq_linux_amd64.tar.gz" ]
-then
-  tar -xzf /cachi2/output/deps/generic/yq_linux_amd64.tar.gz -C "${TOOLS}"
-  YQ=${TOOLS}/yq_linux_amd64
-else
-  curl -Lo ${TOOLS}/yq.tar.gz "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64.tar.gz" && \
-  tar -xzf ${TOOLS}/yq.tar.gz -C ${TOOLS}
-  rm ${TOOLS}/yq.tar.gz
-  YQ=${TOOLS}/yq_linux_amd64
-fi
-chmod +x ${YQ}
+    sed -i "s|newName:.*|newName: ${IMG_NAME}|" "${KUSTOMIZATION_FILE}"
+    sed -i "/newTag:/d" "${KUSTOMIZATION_FILE}"
 
-if [[ -n "$IMG" ]]
-then
-  pushd config/manager
-  ${KUSTOMIZE} edit set image controller="${IMG}"
-  popd
+    if grep -q "digest:" "${KUSTOMIZATION_FILE}"; then
+      sed -i "s|digest:.*|digest: ${IMG_DIGEST}|" "${KUSTOMIZATION_FILE}"
+    else
+      sed -i "/newName:/a\  digest: ${IMG_DIGEST}" "${KUSTOMIZATION_FILE}"
+    fi
+
+  elif [[ "$IMG" == *":"* ]]; then
+    IMG_NAME="${IMG%%:*}"
+    IMG_TAG="${IMG##*:}"
+
+    sed -i "s|newName:.*|newName: ${IMG_NAME}|" "${KUSTOMIZATION_FILE}"
+    sed -i "/digest:/d" "${KUSTOMIZATION_FILE}"
+
+    if grep -q "newTag:" "${KUSTOMIZATION_FILE}"; then
+      sed -i "s|newTag:.*|newTag: ${IMG_TAG}|" "${KUSTOMIZATION_FILE}"
+    else
+      sed -i "/newName:/a\  newTag: ${IMG_TAG}" "${KUSTOMIZATION_FILE}"
+    fi
+
+  else
+    sed -i "s|newName:.*|newName: ${IMG}|" "${KUSTOMIZATION_FILE}"
+    sed -i "/digest:/d" "${KUSTOMIZATION_FILE}"
+    sed -i "/newTag:/d" "${KUSTOMIZATION_FILE}"
+  fi
+
+  sed -i "s|^images:|images:\n-|" "${KUSTOMIZATION_FILE}"
 fi
 
 # Add related images
-RELATED_IMAGE_POLICY_CONTROLLER_DIGEST="$("${YQ}" -r '.["policy-controller"].webhook.image.version' helm-charts/policy-controller-operator/values.yaml)"
-RELATED_IMAGE_OSE_CLI_DIGEST="$("${YQ}" -r '.["policy-controller"].leasescleanup.image.version' helm-charts/policy-controller-operator/values.yaml)"
+FILE="helm-charts/policy-controller-operator/values.yaml"
+RELATED_IMAGE_POLICY_CONTROLLER_DIGEST="$(
+  sed -n '/^[[:space:]]*webhook:/,/^[[:space:]]*leasescleanup:/{
+    /^[[:space:]]*version:/{
+      s/^[[:space:]]*version:[[:space:]]*//
+      p
+      q
+    }
+  }' "$FILE"
+)"
+
+RELATED_IMAGE_OSE_CLI_DIGEST="$(
+  sed -n '/^[[:space:]]*leasescleanup:/,/^[[:space:]]*commonNodeSelector:/{
+    /^[[:space:]]*version:/{
+      s/^[[:space:]]*version:[[:space:]]*//
+      p
+      q
+    }
+  }' "$FILE"
+)"
 echo "RELATED_IMAGE_POLICY_CONTROLLER=registry.redhat.io/rhtas/policy-controller-rhel9@${RELATED_IMAGE_POLICY_CONTROLLER_DIGEST}" > config/manager/images.env
 echo "RELATED_IMAGE_OSE_CLI=registry.redhat.io/openshift4/ose-cli@sha256:${RELATED_IMAGE_OSE_CLI_DIGEST}" >> config/manager/images.env
 
-"${KUSTOMIZE}" build config/manifests | operator-sdk generate bundle ${BUNDLE_GEN_FLAGS:-}
-operator-sdk bundle validate ./bundle
+# Generate and validate the Operator bundle
+oc kustomize config/manifests | operator-sdk generate bundle ${BUNDLE_GEN_FLAGS} && operator-sdk bundle validate ./bundle
