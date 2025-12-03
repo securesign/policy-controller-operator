@@ -23,4 +23,3 @@ tuf-repo.tgz
 
 # Generated bundle resources
 bundle/
-config/manager/images.env

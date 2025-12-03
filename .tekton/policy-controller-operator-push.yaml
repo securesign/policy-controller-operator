@@ -14,7 +14,8 @@ metadata:
       || "helm-charts/***".pathChanged()
       || "test/***".pathChanged()
       || "go.mod".pathChanged()
-      || "go.sum".pathChanged())
+      || "go.sum".pathChanged()
+      || "Makefile".pathChanged())
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: policy-controller-operator
