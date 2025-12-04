@@ -16,7 +16,8 @@ metadata:
       || "test/***".pathChanged()
       || "go.mod".pathChanged()
       || "go.sum".pathChanged()
-      || "Makefile".pathChanged())
+      || "Makefile".pathChanged()
+      || "config/***".pathChanged())
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: policy-controller-operator
