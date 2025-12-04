@@ -1,0 +1,75 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "labels": [
+    "dependencies"
+  ],
+  "ignorePresets": [
+    "config:recommended",
+    "group:recommended",
+    "group:monorepo"
+  ],
+  "enabledManagers": [
+    "dockerfile",
+    "gomod",
+    "custom.regex"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update leases cleanup job image digest in Helm values",
+      "managerFilePatterns": [
+        "/^helm-charts/policy-controller-operator/values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "leasescleanup:\\s*\\n[\\s\\S]*?repository:\\s*(?<depName>[^\\s]+)@sha256\\s*\\n[ \\t]+version:\\s*(?<currentValue>[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": [
+        "Hold Go directive at <=1.24"
+      ],
+      "matchDatasources": [
+        "golang-version"
+      ],
+      "allowedVersions": "<=1.24.0"
+    },
+    {
+      "description": [
+        "Group all Go module updates together"
+      ],
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "Go Dependencies",
+      "groupSlug": "go-deps"
+    },
+    {
+      "description": [
+        "Group all Docker image updates together"
+      ],
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "Docker Images",
+      "groupSlug": "docker-deps"
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "golang"
+      ],
+      "allowedVersions": "<=1.24.0"
+    }
+  ],
+  "gomod": {
+    "postUpdateOptions": [
+      "gomodUpdateImportPaths",
+      "gomodTidy"
+    ]
+  }
+}
