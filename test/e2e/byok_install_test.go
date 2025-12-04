@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,6 +13,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +39,7 @@ var (
 	byokRenderedClusteImagePolicy   []byte
 )
 
-var _ = Describe("policy-controller-operator byok", Ordered, func() {
+var _ = Describe("policy-controller-operator byok", Ordered, Serial, func() {
 	var err error
 
 	BeforeAll(func(ctx SpecContext) {
@@ -70,6 +72,7 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, byokCIPName, "")).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, byokTrustRootRef, "")).To(Succeed())
 			Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "rhtas.charts.redhat.com", Version: "v1alpha1", Kind: "PolicyController"}, "policycontroller-sample", e2e_utils.InstallNamespace)).To(Succeed())
+			Expect(e2e_utils.WaitForPolicyControllerResourcesDeleted(ctx, k8sClient)).To(Succeed())
 		})
 	})
 
@@ -179,15 +182,16 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 
 	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func(ctx SpecContext) {
 
-		byokRenderedClusteImagePolicy, err = e2e_utils.RenderTemplate(clusterImagePolicyBYOKCrABSPath, map[string]string{
-			"FULCIO_URL":          e2e_utils.FulcioUrl(),
-			"REKOR_URL":           e2e_utils.RekorUrl(),
-			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
-			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
-			"TEST_IMAGE":          byokImage,
-			"TRUST_ROOT_REF":      byokTrustRootRef,
-			"CIP_NAME":            byokCIPName,
-		})
+	byokRenderedClusteImagePolicy, err = e2e_utils.RenderTemplate(clusterImagePolicyBYOKCrABSPath, map[string]string{
+		"FULCIO_URL":          e2e_utils.FulcioUrl(),
+		"REKOR_URL":           e2e_utils.RekorUrl(),
+		"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
+		"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
+		"TEST_IMAGE":          byokImage,
+		"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(byokImage),
+		"TRUST_ROOT_REF":      byokTrustRootRef,
+		"CIP_NAME":            byokCIPName,
+	})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedClusteImagePolicy, "")).To(Succeed())
 
@@ -243,6 +247,12 @@ var _ = Describe("policy-controller-operator byok", Ordered, func() {
 	})
 
 	It("should accept the pod", func(ctx SpecContext) {
-		Expect(e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, byokImage)).NotTo(HaveOccurred())
+		Eventually(func(ctx SpecContext) error {
+			err := e2e_utils.CreateTestPod(ctx, k8sClient, byokTestNS, byokImage)
+			if apierrors.IsAlreadyExists(err) {
+				return nil
+			}
+			return err
+		}).WithContext(ctx).WithPolling(5*time.Second).Should(Succeed(), "pod admission never became allowed")
 	})
 })
