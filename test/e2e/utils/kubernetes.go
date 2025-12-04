@@ -6,7 +6,11 @@ import (
 	"os"
 	"time"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -14,10 +18,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -121,6 +121,59 @@ func DeleteResource(ctx context.Context, k8sClient client.Client, gvk schema.Gro
 			return false, nil
 		}
 	})
+}
+
+func WaitForPolicyControllerResourcesDeleted(ctx context.Context, k8sClient client.Client) error {
+	resources := []struct {
+		name      string
+		namespace string
+		obj       client.Object
+	}{
+		{DeploymentName, InstallNamespace, &appsv1.Deployment{}},
+		{ValidatingWebhookName, "", &admissionregistrationv1.ValidatingWebhookConfiguration{}},
+		{MutatingWebhookName, "", &admissionregistrationv1.MutatingWebhookConfiguration{}},
+		{CipValidatingWebhookName, "", &admissionregistrationv1.ValidatingWebhookConfiguration{}},
+		{CipMutatingWebhookName, "", &admissionregistrationv1.MutatingWebhookConfiguration{}},
+		{WebhookSvc, InstallNamespace, &corev1.Service{}},
+		{MetricsSvc, InstallNamespace, &corev1.Service{}},
+		{SecretName, InstallNamespace, &corev1.Secret{}},
+		{"config-policy-controller", InstallNamespace, &corev1.ConfigMap{}},
+		{"config-image-policies", InstallNamespace, &corev1.ConfigMap{}},
+		{"config-sigstore-keys", InstallNamespace, &corev1.ConfigMap{}},
+		{"policycontroller-sample-policy-controller-webhook-logging", InstallNamespace, &corev1.ConfigMap{}},
+	}
+
+	backoff := wait.Backoff{
+		Duration: 1 * time.Second,
+		Factor:   1.5,
+		Steps:    10,
+		Jitter:   0.1,
+	}
+
+	for _, res := range resources {
+		if err := wait.ExponentialBackoffWithContext(ctx, backoff, func(ctx context.Context) (bool, error) {
+			obj := res.obj.DeepCopyObject().(client.Object)
+			obj.SetName(res.name)
+			obj.SetNamespace(res.namespace)
+
+			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: res.namespace, Name: res.name}, obj)
+			switch {
+			case errors.IsNotFound(err):
+				return true, nil
+			case err != nil:
+				return false, err
+			default:
+				if err := k8sClient.Delete(ctx, obj); err != nil && !errors.IsNotFound(err) {
+					return false, err
+				}
+				return false, nil
+			}
+		}); err != nil {
+			return fmt.Errorf("resource %T %q still present: %w", res.obj, res.name, err)
+		}
+	}
+
+	return nil
 }
 
 func InjectCAIntoDeployment(ctx context.Context, k8sClient client.Client, deploymentName, namespace string) error {
