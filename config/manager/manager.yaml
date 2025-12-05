@@ -37,6 +37,9 @@ spec:
           - --health-probe-bind-address=:8081
         image: controller:latest
         name: manager
+        env:
+        - name: WATCH_NAMESPACE
+          value: policy-controller-operator
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

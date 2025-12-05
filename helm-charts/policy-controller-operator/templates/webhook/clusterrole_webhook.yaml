@@ -50,12 +50,12 @@ rules:
 
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
-    verbs: ["get", "list", "watch", "update"]
+    verbs: ["get", "list", "watch"]
 
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
-    verbs: ["get", "update", "list"]
-    resourceNames: ["trustroots.policy.sigstore.dev"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+    resourceNames: ["trustroots.policy.sigstore.dev", "clusterimagepolicies.policy.sigstore.dev"]
 
   - apiGroups: ["policy.sigstore.dev"]
     resources: ["trustroots", "trustroots/status"]
