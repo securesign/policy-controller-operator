@@ -18,7 +18,8 @@ policy-controller:
       repository: registry.redhat.io/rhtas/policy-controller-rhel9
       version: sha256:e1c47f5def2922cfba97bb4441c6fb2f787da4f9eaeeb36a216e54fc4f485fb3
       pullPolicy: IfNotPresent
-    env: {}
+    env:
+      KUBERNETES_MIN_VERSION: "1.29.0-0"
     envFrom: {}
     # configmaps:
     #   - mycm1
