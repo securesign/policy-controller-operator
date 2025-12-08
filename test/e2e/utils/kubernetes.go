@@ -7,6 +7,7 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,10 +29,10 @@ func InjectCA() string {
 	return EnvOrDefault(injectCA, defaultInjectCA)
 }
 
-func CreateTestPod(ctx context.Context, k8sClient client.Client, ns, testImage string) error {
+func CreateTestPod(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-pod",
+			Name:      name,
 			Namespace: ns,
 		},
 		Spec: corev1.PodSpec{
@@ -203,4 +204,293 @@ func ensureEnv(c *corev1.Container, e corev1.EnvVar) {
 		}
 	}
 	c.Env = append(c.Env, e)
+}
+
+func CreateTestDeployment(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
+	labels := map[string]string{
+		"app": name,
+	}
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: ptr.To[int32](1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "test-image",
+							Image: testImage,
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: ptr.To(false),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								RunAsNonRoot: ptr.To(true),
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return k8sClient.Create(ctx, deployment)
+}
+
+func CreateTestReplicaSet(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
+	labels := map[string]string{
+		"app": name,
+	}
+
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: ptr.To[int32](1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyAlways,
+					Containers: []corev1.Container{
+						{
+							Name:  "test-image",
+							Image: testImage,
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: ptr.To(false),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								RunAsNonRoot: ptr.To(true),
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return k8sClient.Create(ctx, rs)
+}
+
+func CreateTestStatefulSet(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
+	labels := map[string]string{
+		"app": name,
+	}
+	serviceName := name + "-svc"
+
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: corev1.ServiceSpec{
+			ClusterIP: "None",
+			Selector:  labels,
+		},
+	}
+	if err := k8sClient.Create(ctx, svc); err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("creating headless service for statefulset: %w", err)
+	}
+
+	sts := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			ServiceName: serviceName,
+			Replicas:    ptr.To[int32](1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyAlways,
+					Containers: []corev1.Container{
+						{
+							Name:  "test-image",
+							Image: testImage,
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: ptr.To(false),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								RunAsNonRoot: ptr.To(true),
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return k8sClient.Create(ctx, sts)
+}
+
+func CreateTestDaemonSet(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
+	labels := map[string]string{
+		"app": name,
+	}
+
+	ds := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyAlways,
+					Containers: []corev1.Container{
+						{
+							Name:  "test-image",
+							Image: testImage,
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: ptr.To(false),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								RunAsNonRoot: ptr.To(true),
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return k8sClient.Create(ctx, ds)
+}
+
+func CreateTestJob(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
+	labels := map[string]string{
+		"app": name,
+	}
+
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: ptr.To[int32](0),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyNever,
+					Containers: []corev1.Container{
+						{
+							Name:  "test-image",
+							Image: testImage,
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: ptr.To(false),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								RunAsNonRoot: ptr.To(true),
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return k8sClient.Create(ctx, job)
+}
+
+func CreateTestCronJob(ctx context.Context, k8sClient client.Client, ns, testImage, name string) error {
+	labels := map[string]string{
+		"app": name,
+	}
+
+	cronJob := &batchv1.CronJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: batchv1.CronJobSpec{
+			Schedule: "*/1 * * * *",
+			JobTemplate: batchv1.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					BackoffLimit: ptr.To[int32](0),
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: labels,
+						},
+						Spec: corev1.PodSpec{
+							RestartPolicy: corev1.RestartPolicyNever,
+							Containers: []corev1.Container{
+								{
+									Name:  "test-image",
+									Image: testImage,
+									SecurityContext: &corev1.SecurityContext{
+										AllowPrivilegeEscalation: ptr.To(false),
+										Capabilities: &corev1.Capabilities{
+											Drop: []corev1.Capability{"ALL"},
+										},
+										RunAsNonRoot: ptr.To(true),
+										SeccompProfile: &corev1.SeccompProfile{
+											Type: "RuntimeDefault",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			SuccessfulJobsHistoryLimit: ptr.To[int32](1),
+			FailedJobsHistoryLimit:     ptr.To[int32](1),
+		},
+	}
+	return k8sClient.Create(ctx, cronJob)
 }
