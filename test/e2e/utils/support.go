@@ -1,11 +1,14 @@
 package e2e_utils
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -112,7 +115,7 @@ func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage strin
 	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}, namespace, "")).To(Succeed())
 }
 
-func ExpectRequiredResources(ctx SpecContext, k8sClient client.Client) {
+func ExpectRequiredResources(ctx context.Context, k8sClient client.Client) {
 	type resource struct {
 		name string
 		obj  client.Object
@@ -137,4 +140,46 @@ func ExpectRequiredResources(ctx SpecContext, k8sClient client.Client) {
 		By("checking " + res.name)
 		ExpectExists(res.name, InstallNamespace, res.obj, k8sClient, ctx)
 	}
+}
+
+func GetPolicyController(ctx context.Context, k8sClient client.Client, ns, name string) (*unstructured.Unstructured, error) {
+	pc := &unstructured.Unstructured{}
+	pc.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rhtas.charts.redhat.com",
+		Version: "v1alpha1",
+		Kind:    "PolicyController",
+	})
+
+	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, pc); err != nil {
+		return nil, err
+	}
+	return pc, nil
+}
+
+func GetTrustRoot(ctx context.Context, k8sClient client.Client, name string) (*unstructured.Unstructured, error) {
+	trustRoot := &unstructured.Unstructured{}
+	trustRoot.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "policy.sigstore.dev",
+		Version: "v1alpha1",
+		Kind:    "TrustRoot",
+	})
+
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: name}, trustRoot); err != nil {
+		return nil, err
+	}
+	return trustRoot, nil
+}
+
+func GetClusterImagePolicy(ctx context.Context, k8sClient client.Client, name string) (*unstructured.Unstructured, error) {
+	cip := &unstructured.Unstructured{}
+	cip.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "policy.sigstore.dev",
+		Version: "v1beta1",
+		Kind:    "ClusterImagePolicy",
+	})
+
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: name}, cip); err != nil {
+		return nil, err
+	}
+	return cip, nil
 }
