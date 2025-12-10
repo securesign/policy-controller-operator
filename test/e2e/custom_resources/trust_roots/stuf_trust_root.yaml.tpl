@@ -1,7 +1,7 @@
 apiVersion: policy.sigstore.dev/v1alpha1
 kind: TrustRoot
 metadata:
-  name: serialized-tuf-install-trust-root
+  name: {{ .TRUST_ROOT_NAME }}
 spec:
   repository:
     root: |-
