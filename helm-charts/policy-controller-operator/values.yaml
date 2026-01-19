@@ -56,7 +56,8 @@ policy-controller:
     # See charts/policy-controller/templates/webhook/deployment_webhook.yaml#L39 for more info.
     affinity: {}
     podDisruptionBudget:
-      enabled: true
+      # Disabled by default to avoid blocking voluntary evictions
+      enabled: false
       minAvailable: 1
       # maxUnavailable: 3
     serviceAccount:
