@@ -53,10 +53,9 @@ func main() {
 
 	policyController := &unstructured.Unstructured{}
 	policyController.SetGroupVersionKind(policyControllerGVK)
-	if err := builder.WebhookManagedBy(mgr).
-		For(policyController).
+	if err := builder.WebhookManagedBy(mgr, policyController).
 		WithValidator(&rhtas_webhook.PolicyControllerValidator{}).
-		WithCustomPath("/validate").
+		WithValidatorCustomPath("/validate").
 		Complete(); err != nil {
 		entryLog.Error(err, "unable to create webhook for PolicyController")
 		os.Exit(1)

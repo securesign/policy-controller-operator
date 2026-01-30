@@ -6,7 +6,6 @@ import (
 
 	"github.com/securesign/policy-controller-operator/cmd/internal/constants"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -17,18 +16,11 @@ import (
 type PolicyControllerValidator struct{}
 
 // validate validates PolicyControllerResources namespace
-func (v *PolicyControllerValidator) validate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PolicyControllerValidator) validate(ctx context.Context, obj *unstructured.Unstructured) (admission.Warnings, error) {
 	log := logf.FromContext(ctx)
 
-	u, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		err := fmt.Errorf("expected *unstructured.Unstructured, got %T", obj)
-		log.Error(err, "unable to convert incoming object")
-		return nil, err
-	}
-
-	if ns := u.GetNamespace(); ns != constants.PolicyControllerInstallNs {
-		err := fmt.Errorf("%s objects may only be created in the %q namespace (got %q)", u.GetKind(), constants.PolicyControllerInstallNs, ns)
+	if ns := obj.GetNamespace(); ns != constants.PolicyControllerInstallNs {
+		err := fmt.Errorf("%s objects may only be created in the %q namespace (got %q)", obj.GetKind(), constants.PolicyControllerInstallNs, ns)
 		log.Info("denying creation: wrong namespace", "namespace", ns)
 		return nil, err
 	}
@@ -36,15 +28,15 @@ func (v *PolicyControllerValidator) validate(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
-func (v *PolicyControllerValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PolicyControllerValidator) ValidateCreate(ctx context.Context, obj *unstructured.Unstructured) (admission.Warnings, error) {
 	return v.validate(ctx, obj)
 }
 
-func (v *PolicyControllerValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *PolicyControllerValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *unstructured.Unstructured) (admission.Warnings, error) {
 	return v.validate(ctx, newObj)
 }
 
-func (v *PolicyControllerValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PolicyControllerValidator) ValidateDelete(ctx context.Context, obj *unstructured.Unstructured) (admission.Warnings, error) {
 	// Allow all delete operations
 	return nil, nil
 }
