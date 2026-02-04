@@ -11,11 +11,26 @@ import (
 	"text/template"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
+	SubscriptionPath               = "../utils/custom_resources/subscription/subscription.yaml.tpl"
+	CatalogSourcePath              = "../utils/custom_resources/catalog_source/catalog_source.yaml.tpl"
+	OperatorGroupPath              = "../utils/custom_resources/operator_group/operator_group.yaml.tpl"
+	PolicyControllerCRPath         = "../utils/custom_resources/policy_controller/common_policy_controller.yaml.tpl"
+	TrustRootCommonCrPath          = "../utils/custom_resources/trust_roots/common_trust_root.yaml.tpl"
+	ClusterimagepolicyCommonCrPath = "../utils/custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
+
+	TrustRootBYOKCrPath          = "../utils/custom_resources/trust_roots/byok_trust_root.yaml.tpl"
+	ClusterimagepolicyBYOKCrPath = "../utils/custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
+
+	TrustRootSTUFCrPath          = "../utils/custom_resources/trust_roots/stuf_trust_root.yaml.tpl"
+	ClusterimagepolicySTUFCrPath = "../utils/custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
+
 	InstallNamespace         = "policy-controller-operator"
+	PackageName              = "policy-controller-operator"
 	DeploymentName           = "policycontroller-sample-policy-controller-webhook"
 	ValidatingWebhookName    = "policy.rhtas.com"
 	MutatingWebhookName      = "policy.rhtas.com"
@@ -62,4 +77,18 @@ func nindent(n int, s string) string {
 
 func Base64EncodeString(src []byte) string {
 	return base64.StdEncoding.EncodeToString(src)
+}
+
+func GetNestedString(obj map[string]any, path ...string) (string, error) {
+	val, found, err := unstructured.NestedString(obj, path...)
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", fmt.Errorf("%s not present yet", strings.Join(path, "."))
+	}
+	if val == "" {
+		return "", fmt.Errorf("%s is empty", strings.Join(path, "."))
+	}
+	return val, nil
 }

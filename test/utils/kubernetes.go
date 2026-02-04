@@ -25,6 +25,12 @@ const (
 	injectCA        = "INJECT_CA"
 )
 
+var (
+	GVKCatalogSource = schema.GroupVersionKind{Group: "operators.coreos.com", Version: "v1alpha1", Kind: "CatalogSource"}
+	GVKSubscription  = schema.GroupVersionKind{Group: "operators.coreos.com", Version: "v1alpha1", Kind: "Subscription"}
+	GVKCSV           = schema.GroupVersionKind{Group: "operators.coreos.com", Version: "v1alpha1", Kind: "ClusterServiceVersion"}
+)
+
 func InjectCA() string {
 	return EnvOrDefault(injectCA, defaultInjectCA)
 }
@@ -493,4 +499,113 @@ func CreateTestCronJob(ctx context.Context, k8sClient client.Client, ns, testIma
 		},
 	}
 	return k8sClient.Create(ctx, cronJob)
+}
+
+func WaitForDeploymentReady(ctx context.Context, c client.Client, ns, name string) error {
+	dep := &appsv1.Deployment{}
+	if err := c.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, dep); err != nil {
+		return err
+	}
+	desired := int32(1)
+	if dep.Spec.Replicas != nil {
+		desired = *dep.Spec.Replicas
+	}
+	if dep.Status.ReadyReplicas != desired {
+		return fmt.Errorf("ready %d/%d", dep.Status.ReadyReplicas, desired)
+	}
+	return nil
+}
+
+func WaitForConfigMapKey(ctx context.Context, c client.Client, ns, name, key string) error {
+	cm := &corev1.ConfigMap{}
+	if err := c.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, cm); err != nil {
+		return err
+	}
+	val, ok := cm.Data[key]
+	if !ok || val == "" {
+		return fmt.Errorf("key not present yet")
+	}
+	return nil
+}
+
+func GetUnstructured(ctx context.Context, c client.Client, gvk schema.GroupVersionKind, namespace, name string) (*unstructured.Unstructured, error) {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(gvk)
+
+	if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func GetCatalogSource(ctx context.Context, c client.Client, ns, name string) (*unstructured.Unstructured, error) {
+	return GetUnstructured(ctx, c, GVKCatalogSource, ns, name)
+}
+func GetSubscription(ctx context.Context, c client.Client, ns, name string) (*unstructured.Unstructured, error) {
+	return GetUnstructured(ctx, c, GVKSubscription, ns, name)
+}
+func GetCSV(ctx context.Context, c client.Client, ns, name string) (*unstructured.Unstructured, error) {
+	return GetUnstructured(ctx, c, GVKCSV, ns, name)
+}
+
+func GetCatalogSourceLastObservedState(cs *unstructured.Unstructured) (string, error) {
+	return GetNestedString(cs.Object, "status", "connectionState", "lastObservedState")
+}
+
+func GetCSVPhase(csv *unstructured.Unstructured) (string, error) {
+	return GetNestedString(csv.Object, "status", "phase")
+}
+
+func GetCSVName(ctx context.Context, c client.Client, ns, subName string) (string, error) {
+	sub, err := GetUnstructured(ctx, c, GVKSubscription, ns, subName)
+	if err != nil {
+		return "", err
+	}
+	val, err := GetNestedString(sub.Object, "status", "installedCSV")
+	if err != nil {
+		return "", fmt.Errorf("Subscription %s/%s: %w", ns, subName, err)
+	}
+	return val, nil
+}
+
+func GetCSVDeploymentNames(csv *unstructured.Unstructured) ([]string, error) {
+	deployments, found, err := unstructured.NestedSlice(csv.Object, "spec", "install", "spec", "deployments")
+	if err != nil {
+		return nil, err
+	}
+	if !found || len(deployments) == 0 {
+		return nil, fmt.Errorf("spec.install.spec.deployments not present or empty")
+	}
+
+	names := make([]string, 0, len(deployments))
+	for i, raw := range deployments {
+		m, ok := raw.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for deployments[%d]: %T", i, raw)
+		}
+		nameAny, ok := m["name"]
+		name, _ := nameAny.(string)
+		if !ok || name == "" {
+			return nil, fmt.Errorf("missing deployments[%d].name", i)
+		}
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+func UpdateSubscriptionSourceAndChannel(ctx context.Context, c client.Client, ns, name, source, channel string) error {
+	sub, err := GetSubscription(ctx, c, ns, name)
+	if err != nil {
+		return err
+	}
+
+	orig := sub.DeepCopy()
+	if err := unstructured.SetNestedField(sub.Object, source, "spec", "source"); err != nil {
+		return err
+	}
+	if err := unstructured.SetNestedField(sub.Object, channel, "spec", "channel"); err != nil {
+		return err
+	}
+
+	return c.Patch(ctx, sub, client.MergeFrom(orig))
 }

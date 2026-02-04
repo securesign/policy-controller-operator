@@ -1,10 +1,10 @@
 package e2e_utils
 
 import (
-    "context"
-    "fmt"
-    "os"
-    "strings"
+	"context"
+	"fmt"
+	"os"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/random"
