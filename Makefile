@@ -270,7 +270,11 @@ unit-test:
 
 .PHONY: e2e-test
 e2e-test:
-	cd test && go test -count=1 -v ./e2e
+	go test -count=1 -tags=integration -v -timeout 30m ./test/...
+
+.PHONY: e2e-test-upgrade
+e2e-test-upgrade:
+	go test -count=1 -tags=upgrade -v -timeout 30m ./test/... 
 
 # Generate related image
 FILE := helm-charts/policy-controller-operator/values.yaml

@@ -1,3 +1,5 @@
+//go:build integration
+
 package e2e
 
 import (
@@ -6,35 +8,25 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	e2e_utils "github.com/securesign/policy-controller-operator/test/e2e/utils"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	e2e_utils "github.com/securesign/policy-controller-operator/test/utils"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	policyControllerCRPath         = "custom_resources/policy_controller/common_policy_controller.yaml.tpl"
-	trustRootCommonCrPath          = "custom_resources/trust_roots/common_trust_root.yaml.tpl"
-	clusterimagepolicyCommonCrPath = "custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
-	commonTestNS                   = "pco-e2e"
-	commonTestImageEnv             = "COMMON_TEST_IMAGE"
-	commonTrustRootName            = "common-install-trust-root"
-	commonCIPName                  = "common-install-cluster-image-policy"
+	commonTestNS        = "pco-e2e"
+	commonTestImageEnv  = "COMMON_TEST_IMAGE"
+	commonTrustRootName = "common-install-trust-root"
+	commonCIPName       = "common-install-cluster-image-policy"
 
-	trustRootBYOKCrPath          = "custom_resources/trust_roots/byok_trust_root.yaml.tpl"
-	clusterimagepolicyBYOKCrPath = "custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
-	byokTestNS                   = "pco-e2e-byok"
-	byokTestImageEnv             = "BYOK_TEST_IMAGE"
-	byokTrustRootName            = "byok-install-trust-root"
-	byokCIPName                  = "byok-install-cluster-image-policy"
+	byokTestNS        = "pco-e2e-byok"
+	byokTestImageEnv  = "BYOK_TEST_IMAGE"
+	byokTrustRootName = "byok-install-trust-root"
+	byokCIPName       = "byok-install-cluster-image-policy"
 
-	trustRootSTUFCrPath          = "custom_resources/trust_roots/stuf_trust_root.yaml.tpl"
-	clusterimagepolicySTUFCrPath = "custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
-	stufTestNS                   = "pco-e2e-stuf"
-	stufTestImageEnv             = "STUF_TEST_IMAGE"
-	stufTrustRootName            = "serialized-tuf-install-trust-root"
-	stufCIPName                  = "serialized-tuf-install-cluster-image-policy"
+	stufTestNS        = "pco-e2e-stuf"
+	stufTestImageEnv  = "STUF_TEST_IMAGE"
+	stufTrustRootName = "serialized-tuf-install-trust-root"
+	stufCIPName       = "serialized-tuf-install-cluster-image-policy"
 )
 
 var (
@@ -64,21 +56,16 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 	})
 
 	It("ensuring deployment is ready", func(ctx SpecContext) {
-		dep := &appsv1.Deployment{}
-		e2e_utils.ExpectExists(e2e_utils.DeploymentName, e2e_utils.InstallNamespace, dep, k8sClient, ctx)
-		desired := *dep.Spec.Replicas
-		Eventually(func(ctx context.Context) int32 {
-			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: e2e_utils.DeploymentName}, dep)
-			Expect(err).ToNot(HaveOccurred())
-			return dep.Status.ReadyReplicas
-		}).WithContext(ctx).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, e2e_utils.DeploymentName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForDeploymentReady(ctx, k8sClient, e2e_utils.InstallNamespace, e2e_utils.DeploymentName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for Deployment %q to be ready", e2e_utils.DeploymentName)
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func(ctx SpecContext) {
 		tufroot, err := e2e_utils.ResolveTufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		commonRenderedTrustRoot, err := e2e_utils.RenderTemplate(trustRootCommonCrPath, map[string]string{
+		commonRenderedTrustRoot, err := e2e_utils.RenderTemplate(e2e_utils.TrustRootCommonCrPath, map[string]string{
 			"TRUST_ROOT_NAME": commonTrustRootName,
 			"TUFMirror":       e2e_utils.TufUrl(),
 			"TUFRoot":         e2e_utils.Base64EncodeString(tufroot),
@@ -86,21 +73,13 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, commonRenderedTrustRoot, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[commonTrustRootName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", commonTrustRootName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-sigstore-keys", commonTrustRootName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", commonTrustRootName)
 	})
 
 	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func(ctx SpecContext) {
-		commonRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(clusterimagepolicyCommonCrPath, map[string]string{
+		commonRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(e2e_utils.ClusterimagepolicyCommonCrPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
@@ -113,27 +92,19 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, commonRenderedClusteImagePolicy, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[commonCIPName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", commonCIPName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-image-policies", commonCIPName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", commonCIPName)
 	})
 
 	It("verifies policy controller behavour", func(ctx SpecContext) {
-		e2e_utils.Verify(ctx, k8sClient, commonTestNS, commonTestImage)
+		e2e_utils.Verify(ctx, k8sClient, commonTestNS, commonTestImage, true)
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func(ctx SpecContext) {
 		trustedrootValues, err := e2e_utils.ParseTufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		byokRenderedTrustRoot, err := e2e_utils.RenderTemplate(trustRootBYOKCrPath, map[string]string{
+		byokRenderedTrustRoot, err := e2e_utils.RenderTemplate(e2e_utils.TrustRootBYOKCrPath, map[string]string{
 			"TRUST_ROOT_NAME":      byokTrustRootName,
 			"FULCIO_ORG_NAME":      trustedrootValues.FulcioOrgName,
 			"FULCIO_COMMON_NAME":   trustedrootValues.FulcioCommonName,
@@ -153,21 +124,13 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedTrustRoot, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[byokTrustRootName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", byokTrustRootName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-sigstore-keys", byokTrustRootName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", byokTrustRootName)
 	})
 
 	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func(ctx SpecContext) {
-		byokRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(clusterimagepolicyBYOKCrPath, map[string]string{
+		byokRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(e2e_utils.ClusterimagepolicyBYOKCrPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
@@ -180,21 +143,13 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, byokRenderedClusteImagePolicy, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[byokCIPName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", byokCIPName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-image-policies", byokCIPName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", byokCIPName)
 	})
 
 	It("verifies policy controller behavour", func(ctx SpecContext) {
-		e2e_utils.Verify(ctx, k8sClient, byokTestNS, byokImage)
+		e2e_utils.Verify(ctx, k8sClient, byokTestNS, byokImage, true)
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func(ctx SpecContext) {
@@ -204,7 +159,7 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		serializedRepo, err := e2e_utils.TufMirrorFS(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		stufRenderedTrustRoot, err := e2e_utils.RenderTemplate(trustRootSTUFCrPath, map[string]string{
+		stufRenderedTrustRoot, err := e2e_utils.RenderTemplate(e2e_utils.TrustRootSTUFCrPath, map[string]string{
 			"TRUST_ROOT_NAME": stufTrustRootName,
 			"TUFRoot":         e2e_utils.Base64EncodeString(tufroot),
 			"REPOSITORY":      e2e_utils.Base64EncodeString(serializedRepo),
@@ -212,22 +167,14 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, stufRenderedTrustRoot, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[stufTrustRootName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", stufTrustRootName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-sigstore-keys", stufTrustRootName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", stufTrustRootName)
 	})
 
 	It("creates a Cluster image policy and adds it to the config-image-policies ConfigMap", func(ctx SpecContext) {
 
-		stufRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(clusterimagepolicySTUFCrPath, map[string]string{
+		stufRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(e2e_utils.ClusterimagepolicySTUFCrPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
@@ -240,20 +187,12 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, stufRenderedClusteImagePolicy, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[stufCIPName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", stufCIPName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-image-policies", stufCIPName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", stufCIPName)
 	})
 
 	It("verifies policy controller behavour", func(ctx SpecContext) {
-		e2e_utils.Verify(ctx, k8sClient, stufTestNS, stufTestImage)
+		e2e_utils.Verify(ctx, k8sClient, stufTestNS, stufTestImage, true)
 	})
 })
