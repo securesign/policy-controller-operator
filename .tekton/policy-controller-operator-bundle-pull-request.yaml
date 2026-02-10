@@ -8,14 +8,22 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main" &&
-      (".tekton/policy-controller-operator-bundle-pull-request.yaml".pathChanged() || "bundle.Dockerfile".pathChanged() || "bundle/***".pathChanged() )
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "tech-preview"
+      && (".tekton/policy-controller-operator-pull-request.yaml".pathChanged() || ".tekton/policy-controller-operator-bundle-pull-request.yaml".pathChanged()
+      || "Dockerfile".pathChanged()
+      || "bundle.Dockerfile".pathChanged()
+      || "helm-charts/***".pathChanged()
+      || "test/***".pathChanged()
+      || "go.mod".pathChanged()
+      || "go.sum".pathChanged()
+      || "Makefile".pathChanged()
+      || "config/***".pathChanged())
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: policy-controller-operator
-    appstudio.openshift.io/component: policy-controller-operator-bundle
+    appstudio.openshift.io/application: policy-controller-operator-tech-preview
+    appstudio.openshift.io/component: policy-controller-operator-bundle-tech-preview
     pipelines.appstudio.openshift.io/type: build
-  name: policy-controller-operator-bundle-on-pull-request
+  name: policy-controller-operator-bundle-tech-preview-on-pull-request
   namespace: rhtas-tenant
 spec:
   params:
@@ -33,6 +41,12 @@ spec:
     value: "true"
   - name: build-source-image
     value: "true"
+  - name: manager-pipelinerun-selector
+    value: "appstudio.openshift.io/application=policy-controller-operator-tech-preview,appstudio.openshift.io/component=policy-controller-operator-tech-preview,pipelinesascode.tekton.dev/sha={{revision}},pipelinesascode.tekton.dev/event-type in (pull_request,retest-all-comment)"
+  - name: manager-registry-url
+    value: registry.redhat.io/rhtas/policy-controller-rhel9-operator
+  - name: release-version
+    value: "0.0.1"
   pipelineRef:
     params:
     - name: url
@@ -40,10 +54,10 @@ spec:
     - name: revision
       value: main
     - name: pathInRepo
-      value: pipelines/docker-build-oci-ta.yaml
+      value: pipelines/bundle-build-oci-ta.yaml
     resolver: git
   taskRunTemplate:
-    serviceAccountName: build-pipeline-policy-controller-operator-bundle
+    serviceAccountName: build-pipeline-policy-controller-operator-bundle-tech-preview
   workspaces:
   - name: git-auth
     secret:
