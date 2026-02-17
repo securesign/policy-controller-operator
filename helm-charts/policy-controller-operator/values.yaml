@@ -90,7 +90,7 @@ policy-controller:
     priorityClass: ""
     image:
       repository: registry.redhat.io/openshift4/ose-cli@sha256
-      version: 02da0c947232171724a55e5459769055c41dcb066f41ea607571ad95dad82954
+      version: d9743e8654f132ee35a7bd4f50150d4e2a59317e88ed02f7c92dbb95ad4c1830
       pullPolicy: IfNotPresent
     resources:
       limits:
