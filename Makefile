@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.1-techpreview
+VERSION ?= 0.0.2-techpreview
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -108,7 +108,7 @@ docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
 
 # PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
-# architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
+# architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.2). To use this option you need to:
 # - able to use docker buildx . More info: https://docs.docker.com/build/buildx/
 # - have enable BuildKit, More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 # - be able to push the image for your registry (i.e. if you do not inform a valid value via IMG=<myregistry/image:<tag>> than the export will fail)
@@ -272,28 +272,17 @@ unit-test:
 e2e-test:
 	cd test && go test -count=1 -v ./e2e
 
-# Generate related images
-.PHONY: yq
-YQ ?= $(LOCALBIN)/yq
-YQ_VERSION ?= v4.43.1
-yq: ## Download yq locally if necessary.
-ifeq (,$(wildcard $(YQ)))
-ifeq (, $(shell which yq 2>/dev/null))
-	@{ \
-	set -e ;\
-	mkdir -p $(dir $(YQ)) ;\
-	curl -sSLo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(OS)_$(ARCH) ;\
-	chmod +x $(YQ) ;\
-	}
-else
-YQ = $(shell which yq)
-endif
-endif
+# Generate related image
+FILE := helm-charts/policy-controller-operator/values.yaml
+RELATED_IMAGE_POLICY_CONTROLLER_DIGEST := $(shell \
+  sed -n '/^[[:space:]]*webhook:/,/^[[:space:]]*leasescleanup:/ { /^[[:space:]]*version:/ { s/^[[:space:]]*version:[[:space:]]*//; p; q } }' $(FILE) \
+)
 
-RELATED_IMAGE_POLICY_CONTROLLER_DIGEST ?= $(shell $(YQ) -r '.["policy-controller"].webhook.image.version' helm-charts/policy-controller-operator/values.yaml)
-RELATED_IMAGE_OSE_CLI_DIGEST ?= $(shell $(YQ) -r '.["policy-controller"].leasescleanup.image.version' helm-charts/policy-controller-operator/values.yaml)
+RELATED_IMAGE_OSE_CLI_DIGEST := $(shell \
+  sed -n '/^[[:space:]]*leasescleanup:/,/^[[:space:]]*commonNodeSelector:/ { /^[[:space:]]*version:/ { s/^[[:space:]]*version:[[:space:]]*//; p; q } }' $(FILE) \
+)
 
 .PHONY: generate-related-images
-generate-related-images: yq
+generate-related-images:
 	echo "RELATED_IMAGE_POLICY_CONTROLLER=registry.redhat.io/rhtas/policy-controller-rhel9@$(RELATED_IMAGE_POLICY_CONTROLLER_DIGEST)" > config/manager/images.env
 	echo "RELATED_IMAGE_OSE_CLI=registry.redhat.io/openshift4/ose-cli@sha256:$(RELATED_IMAGE_OSE_CLI_DIGEST)" >> config/manager/images.env

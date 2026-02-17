@@ -20,3 +20,6 @@ helm-charts/policy-controller-operator/charts/policy-controller
 root.json
 tuf-repo
 tuf-repo.tgz
+
+# Generated bundle resources
+bundle/
