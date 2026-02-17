@@ -15,7 +15,7 @@ FROM registry.redhat.io/ubi9/ubi-minimal:latest@sha256:759f5f42d9d6ce2a705e290b7
 WORKDIR /opt/app-root/src/
 ENV HOME=/opt/app-root/src/
 
-RUN microdnf install -y tar && microdnf clean all
+RUN microdnf install -y tar gzip && microdnf clean all
 COPY helm-charts ${HOME}/helm-charts
 RUN tar -xvf ${HOME}/helm-charts/policy-controller-operator/charts/policy-controller-*.tgz \
     -C ${HOME}/helm-charts/policy-controller-operator/charts/ && \

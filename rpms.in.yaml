@@ -1,4 +1,4 @@
-packages: [tar] 
+packages: [tar, gzip] 
 contentOrigin:
   repofiles: ["./ubi.repo"] 
 arches: [x86_64] 
