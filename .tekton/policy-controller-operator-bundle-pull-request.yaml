@@ -46,7 +46,7 @@ spec:
   - name: manager-registry-url
     value: registry.redhat.io/rhtas/policy-controller-rhel9-operator
   - name: release-version
-    value: "0.0.1"
+    value: "0.0.2"
   pipelineRef:
     params:
     - name: url

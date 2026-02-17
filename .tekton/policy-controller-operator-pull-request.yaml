@@ -44,7 +44,7 @@ spec:
   - name: prefetch-input
     value: '{"type": "gomod", "path": "."}'
   - name: release-version
-    value: "0.0.1"
+    value: "0.0.2"
   pipelineRef:
     params:
     - name: url
