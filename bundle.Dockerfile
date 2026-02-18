@@ -1,4 +1,4 @@
-ARG VERSION="0.0.2"
+ARG VERSION="0.0.2-techpreview"
 ARG CHANNELS="tech-preview"
 ARG DEFAULT_CHANNEL="tech-preview"
 ARG BUNDLE_OVERLAY="olm"
