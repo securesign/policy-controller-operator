@@ -31,7 +31,6 @@ LABEL io.openshift.tags="policy-controller-operator, Red Hat Trusted Artifact Si
 LABEL summary="Operator for the policy-controller-operator."
 LABEL com.redhat.component="policy-controller-operator"
 LABEL name="rhtas/policy-controller-rhel9-operator"
-LABEL cpe="cpe:/a:redhat:trusted_artifact_signer:1.3.1::el9"
 
 ENV HOME=/opt/helm
 COPY watches.yaml ${HOME}/watches.yaml

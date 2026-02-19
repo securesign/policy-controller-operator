@@ -45,7 +45,7 @@ spec:
     value: "appstudio.openshift.io/application=policy-controller-operator-tech-preview,appstudio.openshift.io/component=policy-controller-operator-tech-preview,pipelinesascode.tekton.dev/sha={{revision}},pipelinesascode.tekton.dev/event-type in (pull_request,retest-all-comment)"
   - name: manager-registry-url
     value: registry.redhat.io/rhtas/policy-controller-rhel9-operator
-  - name: release-version
+  - name: image-version
     value: "0.0.2"
   pipelineRef:
     params:

@@ -16,7 +16,7 @@ policy-controller:
     name: webhook
     image:
       repository: registry.redhat.io/rhtas/policy-controller-rhel9
-      version: sha256:e1c47f5def2922cfba97bb4441c6fb2f787da4f9eaeeb36a216e54fc4f485fb3
+      version: sha256:9d58554741550455323ef4b402a366a2ae1a3e372a834af37461a44893793976
       pullPolicy: IfNotPresent
     env:
       KUBERNETES_MIN_VERSION: "1.29.0-0"
