@@ -5,8 +5,8 @@ ARG BUNDLE_OVERLAY="olm"
 ARG BUNDLE_GEN_FLAGS="-q --overwrite=false --version $VERSION --channels=$CHANNELS --default-channel=$DEFAULT_CHANNEL"
 ARG IMG
 
-FROM registry.redhat.io/openshift4/ose-cli-rhel9@sha256:1582ea693f35073e3316e2380a18227b78096ca7f4e1328f1dd8a2c423da26e9 AS oc-builder
-FROM registry.redhat.io/openshift4/ose-operator-sdk-rhel9@sha256:f9498aff0a059464eb6d215ffa60f33d6e7cbef5493cdb494aa7adc8399b021a AS builder
+FROM registry.redhat.io/openshift4/ose-cli-rhel9@sha256:bce29c08669c00ed235d854e7cc3e080e57e8e4818650ab4ed9839e54ce21687 AS oc-builder
+FROM registry.redhat.io/openshift4/ose-operator-sdk-rhel9@sha256:356dc5001086a2e732039d780cca9b61379008ce824341de3f17c532a8f4d28b AS builder
 
 ARG BUNDLE_GEN_FLAGS
 ARG IMG
