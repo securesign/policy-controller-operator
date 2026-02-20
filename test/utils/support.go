@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage string) {
+func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage string, assertRejectAndSign bool) {
 	By("creating a test namespace")
 	Expect(CreateTestNamespace(ctx, k8sClient, namespace)).NotTo(HaveOccurred())
 
@@ -91,16 +91,22 @@ func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage strin
 		}
 	}
 
-	assertReject("rejecting workload creation with unsigned image")
-	VerifyByCosign(ctx, testImage)
-	assertReject("still rejecting workload creation when only image is signed")
-	AttachProvenance(ctx, testImage)
-	assertReject("still rejecting workload creation when only image is signed")
-	AttachSBOM(ctx, testImage)
+	if assertRejectAndSign {
+		assertReject("rejecting workload creation with unsigned image")
+		VerifyByCosign(ctx, testImage)
+		assertReject("still rejecting workload creation when only image is signed")
+		AttachProvenance(ctx, testImage)
+		assertReject("still rejecting workload creation when only image is signed")
+		AttachSBOM(ctx, testImage)
 
-	for _, workload := range workloads {
-		By("allowing workload creation when image, provenance, and SBOM are all present")
-		Expect(workload.create(ctx)).To(Succeed())
+		for _, workload := range workloads {
+			By("allowing workload creation when image, provenance, and SBOM are all present")
+			Expect(workload.create(ctx)).To(Succeed())
+		}
+	} else {
+		for _, workload := range workloads {
+			Expect(workload.create(ctx)).To(Succeed())
+		}
 	}
 
 	By("cleaning up test resources")
