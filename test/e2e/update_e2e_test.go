@@ -1,3 +1,5 @@
+//go:build integration
+
 package e2e
 
 import (
@@ -6,8 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	e2e_utils "github.com/securesign/policy-controller-operator/test/e2e/utils"
-	appsv1 "k8s.io/api/apps/v1"
+	e2e_utils "github.com/securesign/policy-controller-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,14 +29,9 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 	})
 
 	It("ensuring deployment is ready", func(ctx SpecContext) {
-		dep := &appsv1.Deployment{}
-		e2e_utils.ExpectExists(e2e_utils.DeploymentName, e2e_utils.InstallNamespace, dep, k8sClient, ctx)
-		desired := *dep.Spec.Replicas
-		Eventually(func(ctx context.Context) int32 {
-			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: e2e_utils.DeploymentName}, dep)
-			Expect(err).ToNot(HaveOccurred())
-			return dep.Status.ReadyReplicas
-		}).WithContext(ctx).Should(Equal(desired), "timed out waiting for %d pods to be Ready in Deployment %q", desired, e2e_utils.DeploymentName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForDeploymentReady(ctx, k8sClient, e2e_utils.InstallNamespace, e2e_utils.DeploymentName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for Deployment %q to be ready", e2e_utils.DeploymentName)
 	})
 
 	It("reconciles PolicyController", func(ctx SpecContext) {
@@ -65,7 +61,7 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 		tufroot, err := e2e_utils.ResolveTufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		renderedTrustRoot, err := e2e_utils.RenderTemplate(trustRootCommonCrPath, map[string]string{
+		renderedTrustRoot, err := e2e_utils.RenderTemplate(e2e_utils.TrustRootCommonCrPath, map[string]string{
 			"TRUST_ROOT_NAME": updateTrustRootName,
 			"TUFMirror":       e2e_utils.TufUrl(),
 			"TUFRoot":         e2e_utils.Base64EncodeString(tufroot),
@@ -73,17 +69,9 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, renderedTrustRoot, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-sigstore-keys"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[updateTrustRootName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", updateTrustRootName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-sigstore-keys", updateTrustRootName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", updateTrustRootName)
 
 		var trustRootGeneration int64
 		Eventually(func(ctx SpecContext) (int64, error) {
@@ -137,7 +125,7 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 	})
 
 	It("reconciles ClusterImagePolicy", func(ctx SpecContext) {
-		commonRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(clusterimagepolicyCommonCrPath, map[string]string{
+		commonRenderedClusteImagePolicy, err := e2e_utils.RenderTemplate(e2e_utils.ClusterimagepolicyCommonCrPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
@@ -150,17 +138,9 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 		Expect(err).NotTo(HaveOccurred())
 		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, commonRenderedClusteImagePolicy, "")).To(Succeed())
 
-		Eventually(func(ctx SpecContext) (string, error) {
-			cm := &corev1.ConfigMap{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: e2e_utils.InstallNamespace, Name: "config-image-policies"}, cm); err != nil {
-				return "", err
-			}
-			val, ok := cm.Data[updatedClusterImagePolicyName]
-			if !ok {
-				return "", fmt.Errorf("key not present yet")
-			}
-			return val, nil
-		}).WithContext(ctx).ShouldNot(BeEmpty(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", updatedClusterImagePolicyName)
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-image-policies", updatedClusterImagePolicyName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", updatedClusterImagePolicyName)
 
 		var cipGeneration int64
 		Eventually(func(ctx SpecContext) (int64, error) {
@@ -182,7 +162,7 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 		}).WithContext(ctx).Should(BeNumerically(">", int64(0)))
 
 		updatedSubject := fmt.Sprintf("%s-updated", e2e_utils.OidcIssuerSubject())
-		updatedClusterImagePolicy, err := e2e_utils.RenderTemplate(clusterimagepolicyCommonCrPath, map[string]string{
+		updatedClusterImagePolicy, err := e2e_utils.RenderTemplate(e2e_utils.ClusterimagepolicyCommonCrPath, map[string]string{
 			"FULCIO_URL":          e2e_utils.FulcioUrl(),
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
