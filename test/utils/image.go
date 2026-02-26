@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/random"
@@ -40,4 +41,11 @@ func PrepareImage(ctx context.Context, imageENV string) string {
 		panic(err.Error())
 	}
 	return targetImageName
+}
+
+func ImageRepoPrefix(image string) string {
+	if idx := strings.IndexAny(image, "@:"); idx != -1 {
+		return image[:idx]
+	}
+	return image
 }

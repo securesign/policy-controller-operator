@@ -1,7 +1,7 @@
 apiVersion: policy.sigstore.dev/v1alpha1
 kind: TrustRoot
 metadata:
-  name: byok-install-trust-root
+  name: {{ .TRUST_ROOT_NAME }}
 spec:
   sigstoreKeys:
     certificateAuthorities:
