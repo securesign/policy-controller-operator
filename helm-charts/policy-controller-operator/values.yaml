@@ -16,7 +16,7 @@ policy-controller:
     name: webhook
     image:
       repository: registry.redhat.io/rhtas/policy-controller-rhel9
-      version: sha256:86e1e9bd77cc8837a8b374f22486806ce451083cd60d5d5554ed53f7d16d8e6e
+      version: sha256:d46e0c9b5723866a004885b129cccff9f4251965fd607d1e2c40f527cb30188d
       pullPolicy: IfNotPresent
     env:
       KUBERNETES_MIN_VERSION: "1.29.0-0"
@@ -92,7 +92,7 @@ policy-controller:
     priorityClass: ""
     image:
       repository: registry.redhat.io/openshift4/ose-cli@sha256
-      version: 02da0c947232171724a55e5459769055c41dcb066f41ea607571ad95dad82954
+      version: eba94f94949aca0330425b1ae3897f37b2365fc09fc88d60615ca7d02b06e8a9
       pullPolicy: IfNotPresent
     resources:
       limits:
