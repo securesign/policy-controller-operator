@@ -8,14 +8,13 @@ import (
 	"github.com/securesign/policy-controller-operator/cmd/internal/webhook"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestPolicyControllerValidator(t *testing.T) {
 	validator := webhook.PolicyControllerValidator{}
 	tests := []struct {
 		name      string
-		obj       runtime.Object
+		obj       *unstructured.Unstructured
 		expectErr bool
 	}{
 		{
