@@ -48,7 +48,7 @@ require (
 	golang.org/x/mod v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.2-0.20260122202528-d9cc6641c482 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.3-0.20260224192135-eedc5365731c // indirect
 )
 
 require (
