@@ -1,5 +1,5 @@
 # Build the admission-webhook-controller binary
-FROM registry.redhat.io/ubi9/go-toolset:latest@sha256:f8315b365526773d010668c0532d8b431ff505ec2720cdcd1e484c01d012f099 AS admission-webhook-controller
+FROM registry.redhat.io/ubi9/go-toolset:latest@sha256:2830e4bd1c394ed506c00a9abbb4d00445e2e72e8ef4e3cd51e0da0db66dee12 AS admission-webhook-controller
 WORKDIR /opt/app-root/src/
 ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1
@@ -22,7 +22,7 @@ RUN tar -xvf ${HOME}/helm-charts/policy-controller-operator/charts/policy-contro
     rm ${HOME}/helm-charts/policy-controller-operator/charts/policy-controller-*.tgz
 
 # Build the manager binary
-FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator:latest@sha256:1d67f6e713f4fb49275a03cbeffd4b6b1d2638690663958094d332e8c7ada76c
+FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator:latest@sha256:9ccbbfcdd9b0c3d3a3186686e88ee57972d758e5ddc5edfb92b89ca1763cfe98
 
 LABEL description="The image for the policy-controller-operator."
 LABEL io.k8s.description="The image for the policy-controller-operator."
