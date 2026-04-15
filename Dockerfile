@@ -1,5 +1,5 @@
 # Build the admission-webhook-controller binary
-FROM registry.redhat.io/ubi9/go-toolset:latest@sha256:8c5aeac74b4b60dc2e5e44f6b639186b7ec2fec8f0eb9a36d4a32dcf8e255f52 AS admission-webhook-controller
+FROM registry.redhat.io/ubi9/go-toolset:latest@sha256:77bfb0f283eaa3215909342c3dda940605eff5b9f72d6dc18fad1d154d172d55 AS admission-webhook-controller
 WORKDIR /opt/app-root/src/
 ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1
@@ -11,7 +11,7 @@ COPY cmd cmd
 RUN go build -mod=mod -o admission-webhook-controller ./cmd
 
 # Unpack Helm chart
-FROM registry.redhat.io/ubi9/ubi-minimal:latest@sha256:d91be7cea9f03a757d69ad7fcdfcd7849dba820110e7980d5e2a1f46ed06ea3b AS unpack-templates
+FROM registry.redhat.io/ubi9/ubi-minimal:latest@sha256:fe688da81a696387ca53a4c19231e99289591f990c904ef913c51b6e87d4e4df AS unpack-templates
 WORKDIR /opt/app-root/src/
 ENV HOME=/opt/app-root/src/
 
