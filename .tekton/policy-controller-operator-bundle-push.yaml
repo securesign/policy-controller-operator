@@ -7,7 +7,7 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/cancel-in-progress: "false"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "release-1.0"
       && (".tekton/policy-controller-operator-bundle-push.yaml".pathChanged() || ".tekton/policy-controller-operator-push.yaml".pathChanged()
       || "Dockerfile".pathChanged()
       || "bundle.Dockerfile".pathChanged()
@@ -19,10 +19,10 @@ metadata:
       || "config/***".pathChanged())
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: policy-controller-operator
-    appstudio.openshift.io/component: policy-controller-operator-bundle
+    appstudio.openshift.io/application: policy-controller-operator-v1-0
+    appstudio.openshift.io/component: policy-controller-operator-bundle-v1-0
     pipelines.appstudio.openshift.io/type: build
-  name: policy-controller-operator-bundle-on-push
+  name: policy-controller-operator-bundle-v1-0-on-push
   namespace: rhtas-tenant
 spec:
   params:
@@ -39,7 +39,7 @@ spec:
   - name: build-source-image
     value: "true"
   - name: manager-pipelinerun-selector
-    value: appstudio.openshift.io/application=policy-controller-operator,appstudio.openshift.io/component=policy-controller-operator,pipelinesascode.tekton.dev/sha={{revision}},pipelinesascode.tekton.dev/event-type=push
+    value: appstudio.openshift.io/application=policy-controller-operator-v1-0,appstudio.openshift.io/component=policy-controller-operator-v1-0,pipelinesascode.tekton.dev/sha={{revision}},pipelinesascode.tekton.dev/event-type=push
   - name: manager-registry-url
     value: registry.redhat.io/rhtas/policy-controller-rhel9-operator
   - name: image-version
@@ -56,7 +56,7 @@ spec:
       value: pipelines/bundle-build-oci-ta.yaml
     resolver: git
   taskRunTemplate:
-    serviceAccountName: build-pipeline-policy-controller-operator-bundle
+    serviceAccountName: build-pipeline-policy-controller-operator-bundle-v1-0
   workspaces:
   - name: git-auth
     secret:

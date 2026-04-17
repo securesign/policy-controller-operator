@@ -8,7 +8,7 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "release-1.0"
       && (".tekton/policy-controller-operator-pull-request.yaml".pathChanged() || ".tekton/policy-controller-operator-bundle-pull-request.yaml".pathChanged()
       || "Dockerfile".pathChanged()
       || "bundle.Dockerfile".pathChanged()
@@ -20,10 +20,10 @@ metadata:
       || "config/***".pathChanged())
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: policy-controller-operator
-    appstudio.openshift.io/component: policy-controller-operator
+    appstudio.openshift.io/application: policy-controller-operator-v1-0
+    appstudio.openshift.io/component: policy-controller-operator-v1-0
     pipelines.appstudio.openshift.io/type: build
-  name: policy-controller-operator-on-pull-request
+  name: policy-controller-operator-v1-0-on-pull-request
   namespace: rhtas-tenant
 spec:
   params:
@@ -57,7 +57,7 @@ spec:
       value: pipelines/docker-build-oci-ta.yaml
     resolver: git
   taskRunTemplate:
-    serviceAccountName: build-pipeline-policy-controller-operator
+    serviceAccountName: build-pipeline-policy-controller-operator-v1-0
   workspaces:
   - name: git-auth
     secret:
