@@ -4,9 +4,6 @@ on:
   pull_request:
     branches: [ "main", "release*" ]
 
-env:
-  GO_VERSION: 1.24.0
-
 jobs:
   coverage:
     name: Upload Code Coverage
@@ -18,13 +15,13 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
 
       - name: Run tests with coverage
         run: cd cmd && go test -count=1 -coverprofile=coverage.out ./...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: cmd/coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
