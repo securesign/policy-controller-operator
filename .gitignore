@@ -13,6 +13,9 @@ bin
 *.swo
 *~
 
+# coverage
+coverage.out
+
 # testing
 CatalogSource.yaml
 test/Dockerfile
