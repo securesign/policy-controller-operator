@@ -48,8 +48,6 @@ Before proceeding, ensure you have the following:
           ctlog:
             url: $REKOR_URL
             trustRootRef: $TRUST_ROOT_REF
-          rfc3161timestamp:
-            trustRootRef: $TRUST_ROOT_REF
     EOF
     ```
 
