@@ -1,8 +1,14 @@
 name: Code Coverage
 
 on:
+  push:
+    branches: [ "main", "release*" ]
   pull_request:
     branches: [ "main", "release*" ]
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   coverage:
@@ -24,5 +30,6 @@ jobs:
         uses: codecov/codecov-action@v6
         with:
           files: cmd/coverage.out
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
+          flags: unit-tests
           fail_ci_if_error: true
