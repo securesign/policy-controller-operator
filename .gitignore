@@ -15,6 +15,7 @@ bin
 
 # coverage
 coverage.out
+e2e-coverage.out
 
 # testing
 CatalogSource.yaml

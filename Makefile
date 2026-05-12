@@ -270,7 +270,7 @@ unit-test:
 
 .PHONY: e2e-test
 e2e-test:
-	go test -count=1 -tags=integration -v -timeout 30m ./test/...
+	go test -count=1 -tags=integration -cover -coverprofile=e2e-coverage.out -v -timeout 30m ./test/...
 
 .PHONY: e2e-test-upgrade
 e2e-test-upgrade:
