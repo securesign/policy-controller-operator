@@ -268,6 +268,10 @@ catalog-push: ## Push a catalog image.
 unit-test:
 	cd cmd && go test -count=1 ./...
 
+.PHONY: unit-test-coverage
+unit-test-coverage:
+	cd cmd && go test -count=1 -coverprofile=coverage.out ./...
+
 .PHONY: e2e-test
 e2e-test:
 	go test -count=1 -tags=integration -v -timeout 30m ./test/...

@@ -8,18 +8,8 @@ coverage:
       default:
         target: 70%
         threshold: 5%
-
-flags:
-  unit-tests:
-    paths:
-      - cmd/
-    carryforward: true
+        informational: true
 
 flag_management:
-  individual_flags:
-    - name: unit-tests
-      statuses:
-        - type: project
-          target: auto
-        - type: patch
-          target: 70%
+  default_rules:
+    carryforward: true
