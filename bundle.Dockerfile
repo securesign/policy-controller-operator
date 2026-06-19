@@ -1,5 +1,5 @@
-ARG VERSION="1.0.0"
-ARG CHANNELS="stable,stable-v1.0"
+ARG VERSION="1.1.0"
+ARG CHANNELS="stable,stable-v1.1"
 ARG DEFAULT_CHANNEL="stable"
 ARG BUNDLE_OVERLAY="olm"
 ARG BUNDLE_GEN_FLAGS="-q --overwrite=false --version $VERSION --channels=$CHANNELS --default-channel=$DEFAULT_CHANNEL"
@@ -33,7 +33,7 @@ LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
 LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
 LABEL operators.operatorframework.io.bundle.metadata.v1=metadata/
 LABEL operators.operatorframework.io.bundle.package.v1=policy-controller-operator
-LABEL operators.operatorframework.io.bundle.channels.v1=stable,stable-v1.0
+LABEL operators.operatorframework.io.bundle.channels.v1=stable,stable-v1.1
 LABEL operators.operatorframework.io.metrics.builder=operator-sdk-v1.39.2
 LABEL operators.operatorframework.io.metrics.mediatype.v1=metrics+v1
 LABEL operators.operatorframework.io.metrics.project_layout=helm.sdk.operatorframework.io/v1
