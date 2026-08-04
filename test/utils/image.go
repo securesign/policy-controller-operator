@@ -34,7 +34,7 @@ func PrepareImage(ctx context.Context, imageENV string) string {
 		panic(err.Error())
 	}
 
-	targetImageName := fmt.Sprintf("quay.io/tdalton/e2e-test:%s", uuid.New().String())
+	targetImageName := fmt.Sprintf("quay.io/securesign/e2e-test:%s", uuid.New().String())
 	ref, err := name.ParseReference(targetImageName)
 	if err != nil {
 		panic(err.Error())
