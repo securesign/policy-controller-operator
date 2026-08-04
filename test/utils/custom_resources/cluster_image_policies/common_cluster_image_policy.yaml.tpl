@@ -4,7 +4,7 @@ metadata:
   name: {{ .CIP_NAME }}
 spec:
   images:
-    - glob: "{{ .TEST_IMAGE }}*"
+    - glob: "{{ .TEST_IMAGE_PREFIX }}**"
   authorities:
     - keyless:
         url: {{ .FULCIO_URL }}
