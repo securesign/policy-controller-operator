@@ -85,7 +85,6 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
 			"TEST_IMAGE":          commonTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(commonTestImage),
 			"TRUST_ROOT_REF":      commonTrustRootName,
 			"CIP_NAME":            commonCIPName,
 		})
@@ -136,7 +135,6 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
 			"TEST_IMAGE":          byokImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(byokImage),
 			"TRUST_ROOT_REF":      byokTrustRootName,
 			"CIP_NAME":            byokCIPName,
 		})
@@ -180,7 +178,6 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
 			"TEST_IMAGE":          stufTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(stufTestImage),
 			"TRUST_ROOT_REF":      stufTrustRootName,
 			"CIP_NAME":            stufCIPName,
 		})

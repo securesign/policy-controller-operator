@@ -201,7 +201,6 @@ var _ = Describe("Operator upgrade", Ordered, func() {
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
 			"TEST_IMAGE":          upgradeTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(upgradeTestImage),
 			"TRUST_ROOT_REF":      upgradetrustRootName,
 			"CIP_NAME":            upgradeCIPName,
 		})
@@ -302,7 +301,6 @@ var _ = Describe("Operator upgrade", Ordered, func() {
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
 			"TEST_IMAGE":          postUpgradeTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(postUpgradeTestImage),
 			"TRUST_ROOT_REF":      upgradetrustRootName,
 			"CIP_NAME":            upgradeCIPName,
 		})

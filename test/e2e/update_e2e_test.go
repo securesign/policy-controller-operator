@@ -131,7 +131,6 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
 			"TEST_IMAGE":          commonTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(commonTestImage),
 			"TRUST_ROOT_REF":      updateTrustRootName,
 			"CIP_NAME":            updatedClusterImagePolicyName,
 		})
@@ -168,7 +167,6 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": updatedSubject,
 			"TEST_IMAGE":          commonTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(commonTestImage),
 			"TRUST_ROOT_REF":      updateTrustRootName,
 			"CIP_NAME":            updatedClusterImagePolicyName,
 		})
