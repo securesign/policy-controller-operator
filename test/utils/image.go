@@ -50,11 +50,11 @@ func PrepareImage(ctx context.Context, imageENV string) string {
 		panic(err.Error())
 	}
 
-	d, err := image.Digest()
+	desc, err := remote.Head(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		panic(err.Error())
 	}
-	digestRef := fmt.Sprintf("quay.io/securesign/e2e-tests@%s", d.String())
+	digestRef := fmt.Sprintf("quay.io/securesign/e2e-tests@%s", desc.Digest.String())
 
 	if err = os.Setenv(imageENV, digestRef); err != nil {
 		panic(err.Error())
