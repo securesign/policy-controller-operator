@@ -49,10 +49,17 @@ func PrepareImage(ctx context.Context, imageENV string) string {
 	if err != nil {
 		panic(err.Error())
 	}
-	if err = os.Setenv(imageENV, targetImageName); err != nil {
+
+	d, err := image.Digest()
+	if err != nil {
 		panic(err.Error())
 	}
-	return targetImageName
+	digestRef := fmt.Sprintf("quay.io/securesign/e2e-tests@%s", d.String())
+
+	if err = os.Setenv(imageENV, digestRef); err != nil {
+		panic(err.Error())
+	}
+	return digestRef
 }
 
 func ImageRepoPrefix(image string) string {
