@@ -19,9 +19,16 @@ import (
 const (
 	updateTrustRootName           = "update-trust-root"
 	updatedClusterImagePolicyName = "update-cip"
+	updateTestImageEnv            = "UPDATE_TEST_IMAGE"
 )
 
+var updateTestImage string
+
 var _ = Describe("policy-controller-operator update reconciliation", Ordered, Serial, func() {
+
+	BeforeAll(func(ctx SpecContext) {
+		updateTestImage = e2e_utils.PrepareImage(ctx, updateTestImageEnv)
+	})
 
 	AfterAll(func(ctx SpecContext) {
 		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, updatedClusterImagePolicyName, "")).To(Succeed())
@@ -130,8 +137,8 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
-			"TEST_IMAGE":          commonTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(commonTestImage),
+			"TEST_IMAGE":          updateTestImage,
+			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(updateTestImage),
 			"TRUST_ROOT_REF":      updateTrustRootName,
 			"CIP_NAME":            updatedClusterImagePolicyName,
 		})
@@ -167,8 +174,8 @@ var _ = Describe("policy-controller-operator update reconciliation", Ordered, Se
 			"REKOR_URL":           e2e_utils.RekorUrl(),
 			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
 			"OIDC_ISSUER_SUBJECT": updatedSubject,
-			"TEST_IMAGE":          commonTestImage,
-			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(commonTestImage),
+			"TEST_IMAGE":          updateTestImage,
+			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(updateTestImage),
 			"TRUST_ROOT_REF":      updateTrustRootName,
 			"CIP_NAME":            updatedClusterImagePolicyName,
 		})
