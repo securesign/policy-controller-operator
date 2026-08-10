@@ -8,14 +8,35 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage string, assertRejectAndSign bool) {
+	By("preparing test namespace")
+	existing := &corev1.Namespace{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: namespace}, existing); err == nil {
+		Expect(k8sClient.Delete(ctx, existing)).To(Succeed())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKey{Name: namespace}, &corev1.Namespace{}))
+		}).WithContext(ctx).Should(BeTrue())
+	} else if !errors.IsNotFound(err) {
+		Expect(err).NotTo(HaveOccurred(), "unexpected error checking for existing namespace")
+	}
+
 	By("creating a test namespace")
 	Expect(CreateTestNamespace(ctx, k8sClient, namespace)).NotTo(HaveOccurred())
+
+	DeferCleanup(func() {
+		By("cleaning up test namespace " + namespace)
+		ns := &corev1.Namespace{}
+		ns.Name = namespace
+		if err := k8sClient.Delete(context.Background(), ns); err != nil && !errors.IsNotFound(err) {
+			GinkgoWriter.Printf("WARNING: failed to delete namespace %s: %v\n", namespace, err)
+		}
+	})
 
 	Eventually(func(g Gomega, ctx SpecContext) {
 		ns := &corev1.Namespace{}
@@ -32,7 +53,6 @@ func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage strin
 		daemonSetName   = "test-daemonset"
 		jobName         = "test-job"
 		cronJobName     = "test-cronjob"
-		headlessSvcName = statefulSetName + "-svc"
 	)
 
 	workloads := []struct {
@@ -109,16 +129,6 @@ func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage strin
 		}
 	}
 
-	By("cleaning up test resources")
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, podName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"}, deploymentName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "ReplicaSet"}, replicaSetName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"}, statefulSetName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}, daemonSetName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "batch", Version: "v1", Kind: "Job"}, jobName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "batch", Version: "v1", Kind: "CronJob"}, cronJobName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Service"}, headlessSvcName, namespace)).To(Succeed())
-	Expect(DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}, namespace, "")).To(Succeed())
 }
 
 func ExpectRequiredResources(ctx context.Context, k8sClient client.Client) {

@@ -48,6 +48,7 @@ func OidcToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
@@ -57,9 +58,10 @@ func OidcToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if js["access_token"] == nil {
+	token, ok := js["access_token"].(string)
+	if !ok || token == "" {
 		return "", errors.New("no access token found")
 	}
 
-	return js["access_token"].(string), nil
+	return token, nil
 }
