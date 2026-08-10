@@ -101,6 +101,10 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		e2e_utils.Verify(ctx, k8sClient, commonTestNS, commonTestImage, true)
 	})
 
+	It("cleans up common CIP before BYOK tests", func(ctx SpecContext) {
+		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, commonCIPName, "")).To(Succeed())
+	})
+
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func(ctx SpecContext) {
 		trustedrootValues, err := e2e_utils.ParseTufRoot(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -150,6 +154,10 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 
 	It("verifies policy controller behavour", func(ctx SpecContext) {
 		e2e_utils.Verify(ctx, k8sClient, byokTestNS, byokImage, true)
+	})
+
+	It("cleans up BYOK CIP before STUF tests", func(ctx SpecContext) {
+		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, byokCIPName, "")).To(Succeed())
 	})
 
 	It("creates a TrustRoot and adds it to the sigstore-keys ConfigMap", func(ctx SpecContext) {
