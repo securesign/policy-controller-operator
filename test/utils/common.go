@@ -22,6 +22,7 @@ const (
 	PolicyControllerCRPath         = "../utils/custom_resources/policy_controller/common_policy_controller.yaml.tpl"
 	TrustRootCommonCrPath          = "../utils/custom_resources/trust_roots/common_trust_root.yaml.tpl"
 	ClusterimagepolicyCommonCrPath = "../utils/custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
+	ClusterimagepolicyBundleCrPath = "../utils/custom_resources/cluster_image_policies/bundle_cluster_image_policy.yaml.tpl"
 
 	TrustRootBYOKCrPath          = "../utils/custom_resources/trust_roots/byok_trust_root.yaml.tpl"
 	ClusterimagepolicyBYOKCrPath = "../utils/custom_resources/cluster_image_policies/common_cluster_image_policy.yaml.tpl"
