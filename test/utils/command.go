@@ -21,3 +21,20 @@ func ExecuteWithInput(input string, command string, args ...string) error {
 	cmd.Stdout = core.GinkgoWriter
 	return cmd.Run()
 }
+
+func ExecuteWithEnv(env []string, command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Env = env
+	cmd.Stderr = core.GinkgoWriter
+	cmd.Stdout = core.GinkgoWriter
+	return cmd.Run()
+}
+
+func ExecuteWithEnvAndInput(env []string, input string, command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(input)
+	cmd.Stderr = core.GinkgoWriter
+	cmd.Stdout = core.GinkgoWriter
+	return cmd.Run()
+}
