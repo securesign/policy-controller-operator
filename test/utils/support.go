@@ -14,7 +14,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage string, assertRejectAndSign bool) {
+type VerifyOpt struct {
+	BundleFormat bool
+}
+
+func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage string, assertRejectAndSign bool, opts ...VerifyOpt) {
+	var bundleFormat bool
+	if len(opts) > 0 {
+		bundleFormat = opts[0].BundleFormat
+	}
+
 	By("preparing test namespace")
 	existing := &corev1.Namespace{}
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: namespace}, existing); err == nil {
@@ -113,11 +122,11 @@ func Verify(ctx SpecContext, k8sClient client.Client, namespace, testImage strin
 
 	if assertRejectAndSign {
 		assertReject("rejecting workload creation with unsigned image")
-		VerifyByCosign(ctx, testImage)
+		VerifyByCosign(ctx, testImage, bundleFormat)
 		assertReject("still rejecting workload creation when only image is signed")
-		AttachProvenance(ctx, testImage)
+		AttachProvenance(ctx, testImage, bundleFormat)
 		assertReject("still rejecting workload creation when only image is signed")
-		AttachSBOM(ctx, testImage)
+		AttachSBOM(ctx, testImage, bundleFormat)
 
 		for _, workload := range workloads {
 			By("allowing workload creation when image, provenance, and SBOM are all present")
