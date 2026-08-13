@@ -3,6 +3,7 @@ package e2e_utils
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -40,14 +41,39 @@ func IsCosignV3() bool {
 	return cosignV3
 }
 
-func cosignSignArgs() []string {
+func cosignSignArgs(bundleFormat bool) []string {
+	if bundleFormat {
+		return []string{"--new-bundle-format"}
+	}
 	if IsCosignV3() {
 		return []string{"--new-bundle-format=false", "--use-signing-config=false"}
 	}
 	return nil
 }
 
-func VerifyByCosign(ctx context.Context, targetImageName string) {
+// signingConfigEnv returns a copy of the process environment with COSIGN_*
+// service-URL variables removed so that cosign v3 uses its TUF-based signing
+// config instead. SIGSTORE_ID_TOKEN is injected for authentication.
+func filteredCosignEnv() []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, e := range os.Environ() {
+		key, _, _ := strings.Cut(e, "=")
+		switch key {
+		case "COSIGN_FULCIO_URL", "COSIGN_REKOR_URL", "COSIGN_TIMESTAMP_SERVER_URL",
+			"COSIGN_OIDC_ISSUER", "COSIGN_OIDC_CLIENT_ID", "COSIGN_REPOSITORY",
+			"COSIGN_IDENTITY_TOKEN":
+			continue
+		}
+		env = append(env, e)
+	}
+	return env
+}
+
+func signingConfigEnv(oidcToken string) []string {
+	return append(filteredCosignEnv(), "SIGSTORE_ID_TOKEN="+oidcToken)
+}
+
+func VerifyByCosign(ctx context.Context, targetImageName string, bundleFormat bool) {
 	Eventually(func() error {
 		return Execute("cosign", "initialize", "--mirror="+TufUrl(), "--root="+TufUrl()+"/root.json")
 	}).WithContext(ctx).Should(Succeed())
@@ -58,8 +84,12 @@ func VerifyByCosign(ctx context.Context, targetImageName string) {
 			return fmt.Errorf("fetching OIDC token: %w", err)
 		}
 
+		if bundleFormat && IsCosignV3() {
+			return ExecuteWithEnv(signingConfigEnv(oidcToken), "cosign", "sign", "-y", targetImageName)
+		}
+
 		signArgs := []string{"sign", "-y"}
-		signArgs = append(signArgs, cosignSignArgs()...)
+		signArgs = append(signArgs, cosignSignArgs(bundleFormat)...)
 		signArgs = append(signArgs,
 			"--timestamp-server-url="+TsaUrl(),
 			"--fulcio-url="+FulcioUrl(),
@@ -73,35 +103,43 @@ func VerifyByCosign(ctx context.Context, targetImageName string) {
 	}).WithContext(ctx).Should(Succeed())
 
 	Eventually(func() error {
-		return Execute("cosign", "verify",
-			"--rekor-url="+RekorUrl(),
+		verifyArgs := []string{"verify",
+			"--rekor-url=" + RekorUrl(),
 			"--certificate-identity-regexp", ".*@redhat",
 			"--certificate-oidc-issuer-regexp", ".*keycloak.*",
 			targetImageName,
-		)
+		}
+		if bundleFormat && IsCosignV3() {
+			return ExecuteWithEnv(filteredCosignEnv(), "cosign", verifyArgs...)
+		}
+		return Execute("cosign", verifyArgs...)
 	}).WithContext(ctx).Should(Succeed())
 }
 
-func AttachProvenance(ctx context.Context, targetImageName string) {
-	const provenance = `{
-	  "buildType": "https://example.com/e2e-test",
-	  "builder":   { "id": "e2e-test" }
-	}`
-
+func cosignAttest(ctx context.Context, targetImageName string, bundleFormat bool, attestType, predicate string) {
 	Eventually(func() error {
 		oidcToken, err := OidcToken(ctx)
 		if err != nil {
 			return fmt.Errorf("fetching OIDC token: %w", err)
 		}
 
+		if bundleFormat && IsCosignV3() {
+			return ExecuteWithEnvAndInput(signingConfigEnv(oidcToken), predicate, "cosign",
+				"attest", "--yes",
+				"--predicate", "-",
+				"--type", attestType,
+				targetImageName,
+			)
+		}
+
 		attestArgs := []string{
 			"attest",
 			"--yes",
 		}
-		attestArgs = append(attestArgs, cosignSignArgs()...)
+		attestArgs = append(attestArgs, cosignSignArgs(bundleFormat)...)
 		attestArgs = append(attestArgs,
 			"--predicate", "-",
-			"--type", "slsaprovenance",
+			"--type", attestType,
 			"--fulcio-url="+FulcioUrl(),
 			"--rekor-url="+RekorUrl(),
 			"--oidc-issuer="+OidcIssuerUrl(),
@@ -112,11 +150,19 @@ func AttachProvenance(ctx context.Context, targetImageName string) {
 			attestArgs = append(attestArgs, "--timestamp-server-url="+TsaUrl())
 		}
 		attestArgs = append(attestArgs, targetImageName)
-		return ExecuteWithInput(provenance, "cosign", attestArgs...)
+		return ExecuteWithInput(predicate, "cosign", attestArgs...)
 	}).WithContext(ctx).Should(Succeed())
 }
 
-func AttachSBOM(ctx context.Context, targetImageName string) {
+func AttachProvenance(ctx context.Context, targetImageName string, bundleFormat bool) {
+	const provenance = `{
+	  "buildType": "https://example.com/e2e-test",
+	  "builder":   { "id": "e2e-test" }
+	}`
+	cosignAttest(ctx, targetImageName, bundleFormat, "slsaprovenance", provenance)
+}
+
+func AttachSBOM(ctx context.Context, targetImageName string, bundleFormat bool) {
 	sbom := fmt.Sprintf(`{
 	  "$schema":"http://cyclonedx.org/schema/bom-1.6.schema.json",
 	  "bomFormat":"CycloneDX",
@@ -129,31 +175,5 @@ func AttachSBOM(ctx context.Context, targetImageName string) {
 	    }
 	  }
 	}`, targetImageName)
-
-	Eventually(func() error {
-		oidcToken, err := OidcToken(ctx)
-		if err != nil {
-			return fmt.Errorf("fetching OIDC token: %w", err)
-		}
-
-		attestArgs := []string{
-			"attest",
-			"--yes",
-		}
-		attestArgs = append(attestArgs, cosignSignArgs()...)
-		attestArgs = append(attestArgs,
-			"--predicate", "-",
-			"--type", "cyclonedx",
-			"--fulcio-url="+FulcioUrl(),
-			"--rekor-url="+RekorUrl(),
-			"--oidc-issuer="+OidcIssuerUrl(),
-			"--oidc-client-id="+OidcClientID(),
-			"--identity-token="+oidcToken,
-		)
-		if !IsCosignV3() {
-			attestArgs = append(attestArgs, "--timestamp-server-url="+TsaUrl())
-		}
-		attestArgs = append(attestArgs, targetImageName)
-		return ExecuteWithInput(sbom, "cosign", attestArgs...)
-	}).WithContext(ctx).Should(Succeed())
+	cosignAttest(ctx, targetImageName, bundleFormat, "cyclonedx", sbom)
 }

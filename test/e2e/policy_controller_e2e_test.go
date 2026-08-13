@@ -27,6 +27,11 @@ const (
 	stufTestImageEnv  = "STUF_TEST_IMAGE"
 	stufTrustRootName = "serialized-tuf-install-trust-root"
 	stufCIPName       = "serialized-tuf-install-cluster-image-policy"
+
+	bundleTestNS        = "pco-e2e-bundle"
+	bundleTestImageEnv  = "BUNDLE_TEST_IMAGE"
+	bundleTrustRootName = "bundle-install-trust-root"
+	bundleCIPName       = "bundle-install-cluster-image-policy"
 )
 
 var (
@@ -34,6 +39,7 @@ var (
 	injectCA        bool
 	byokImage       string
 	stufTestImage   string
+	bundleTestImage string
 )
 
 var _ = Describe("policy-controller-operator common installation", Ordered, Serial, func() {
@@ -42,6 +48,7 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 		commonTestImage = e2e_utils.PrepareImage(ctx, commonTestImageEnv)
 		byokImage = e2e_utils.PrepareImage(ctx, byokTestImageEnv)
 		stufTestImage = e2e_utils.PrepareImage(ctx, stufTestImageEnv)
+		bundleTestImage = e2e_utils.PrepareImage(ctx, bundleTestImageEnv)
 	})
 
 	AfterAll(func(ctx SpecContext) {
@@ -53,6 +60,9 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 
 		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, stufCIPName, "")).To(Succeed())
 		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, stufTrustRootName, "")).To(Succeed())
+
+		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, bundleCIPName, "")).To(Succeed())
+		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1alpha1", Kind: "TrustRoot"}, bundleTrustRootName, "")).To(Succeed())
 	})
 
 	It("ensuring deployment is ready", func(ctx SpecContext) {
@@ -202,5 +212,61 @@ var _ = Describe("policy-controller-operator common installation", Ordered, Seri
 
 	It("verifies policy controller behavour", func(ctx SpecContext) {
 		e2e_utils.Verify(ctx, k8sClient, stufTestNS, stufTestImage, true)
+	})
+
+	It("cleans up STUF CIP before bundle format tests", func(ctx SpecContext) {
+		if !e2e_utils.IsCosignV3() {
+			Skip("cosign v3 required for bundle format tests")
+		}
+		Expect(e2e_utils.DeleteResource(ctx, k8sClient, schema.GroupVersionKind{Group: "policy.sigstore.dev", Version: "v1beta1", Kind: "ClusterImagePolicy"}, stufCIPName, "")).To(Succeed())
+	})
+
+	It("creates a TrustRoot for cosign v3 bundle format test", func(ctx SpecContext) {
+		if !e2e_utils.IsCosignV3() {
+			Skip("cosign v3 required for bundle format tests")
+		}
+		tufroot, err := e2e_utils.ResolveTufRoot(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		bundleRenderedTrustRoot, err := e2e_utils.RenderTemplate(e2e_utils.TrustRootCommonCrPath, map[string]string{
+			"TRUST_ROOT_NAME": bundleTrustRootName,
+			"TUFMirror":       e2e_utils.TufUrl(),
+			"TUFRoot":         e2e_utils.Base64EncodeString(tufroot),
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, bundleRenderedTrustRoot, "")).To(Succeed())
+
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-sigstore-keys", bundleTrustRootName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-sigstore-keys' to have the %s key", bundleTrustRootName)
+	})
+
+	It("creates a bundle format ClusterImagePolicy", func(ctx SpecContext) {
+		if !e2e_utils.IsCosignV3() {
+			Skip("cosign v3 required for bundle format tests")
+		}
+		bundleRenderedCIP, err := e2e_utils.RenderTemplate(e2e_utils.ClusterimagepolicyBundleCrPath, map[string]string{
+			"FULCIO_URL":          e2e_utils.FulcioUrl(),
+			"REKOR_URL":           e2e_utils.RekorUrl(),
+			"OIDC_ISSUER_URL":     e2e_utils.OidcIssuerUrl(),
+			"OIDC_ISSUER_SUBJECT": e2e_utils.OidcIssuerSubject(),
+			"TEST_IMAGE":          bundleTestImage,
+			"TEST_IMAGE_PREFIX":   e2e_utils.ImageRepoPrefix(bundleTestImage),
+			"TRUST_ROOT_REF":      bundleTrustRootName,
+			"CIP_NAME":            bundleCIPName,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(e2e_utils.ApplyManifest(ctx, k8sClient, bundleRenderedCIP, "")).To(Succeed())
+
+		Eventually(func(ctx context.Context) error {
+			return e2e_utils.WaitForConfigMapKey(ctx, k8sClient, e2e_utils.InstallNamespace, "config-image-policies", bundleCIPName)
+		}).WithContext(ctx).Should(Succeed(), "timed out waiting for ConfigMap 'config-image-policies' to have the %s key", bundleCIPName)
+	})
+
+	It("verifies policy controller behaviour with cosign v3 bundle format", func(ctx SpecContext) {
+		if !e2e_utils.IsCosignV3() {
+			Skip("cosign v3 required for bundle format tests")
+		}
+		e2e_utils.Verify(ctx, k8sClient, bundleTestNS, bundleTestImage, true, e2e_utils.VerifyOpt{BundleFormat: true})
 	})
 })
