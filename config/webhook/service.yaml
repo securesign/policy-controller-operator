@@ -4,7 +4,7 @@ metadata:
   name: controller-manager-webhook-service
   namespace: system
   labels:
-    control-plane: controller-manager
+    control-plane: policy-controller-operator
 spec:
   ports:
     - name: https-webhook
@@ -12,4 +12,4 @@ spec:
       targetPort: 9443
       protocol: TCP
   selector:
-    control-plane: controller-manager
+    control-plane: policy-controller-operator

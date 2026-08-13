@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -149,36 +150,38 @@ func InjectCAIntoDeployment(ctx context.Context, k8sClient client.Client, deploy
 		return fmt.Errorf("ensuring trusted CA ConfigMap: %w", err)
 	}
 
-	var deploy appsv1.Deployment
-	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: deploymentName}, &deploy); err != nil {
-		return err
-	}
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var deploy appsv1.Deployment
+		if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: deploymentName}, &deploy); err != nil {
+			return err
+		}
 
-	ensureVolume(&deploy, corev1.Volume{
-		Name: "trusted-ca",
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "trusted-ca-bundle"},
-				Items: []corev1.KeyToPath{
-					{Key: "ca-bundle.crt", Path: "ca-bundle.crt"},
+		ensureVolume(&deploy, corev1.Volume{
+			Name: "trusted-ca",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "trusted-ca-bundle"},
+					Items: []corev1.KeyToPath{
+						{Key: "ca-bundle.crt", Path: "ca-bundle.crt"},
+					},
 				},
 			},
-		},
-	})
+		})
 
-	for i := range deploy.Spec.Template.Spec.Containers {
-		ensureMount(&deploy.Spec.Template.Spec.Containers[i], corev1.VolumeMount{
-			Name:      "trusted-ca",
-			MountPath: "/etc/ssl/certs/tls-ca-bundle.pem",
-			SubPath:   "ca-bundle.crt",
-			ReadOnly:  true,
-		})
-		ensureEnv(&deploy.Spec.Template.Spec.Containers[i], corev1.EnvVar{
-			Name:  "SSL_CERT_DIR",
-			Value: "/var/run/secrets/kubernetes.io/serviceaccount:/etc/ssl/certs",
-		})
-	}
-	return k8sClient.Update(ctx, &deploy)
+		for i := range deploy.Spec.Template.Spec.Containers {
+			ensureMount(&deploy.Spec.Template.Spec.Containers[i], corev1.VolumeMount{
+				Name:      "trusted-ca",
+				MountPath: "/etc/ssl/certs/tls-ca-bundle.pem",
+				SubPath:   "ca-bundle.crt",
+				ReadOnly:  true,
+			})
+			ensureEnv(&deploy.Spec.Template.Spec.Containers[i], corev1.EnvVar{
+				Name:  "SSL_CERT_DIR",
+				Value: "/var/run/secrets/kubernetes.io/serviceaccount:/etc/ssl/certs",
+			})
+		}
+		return k8sClient.Update(ctx, &deploy)
+	})
 }
 
 func ensureVolume(d *appsv1.Deployment, v corev1.Volume) {

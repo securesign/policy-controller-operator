@@ -159,6 +159,9 @@ var _ = Describe("Operator upgrade", Ordered, func() {
 		Eventually(func(ctx context.Context) error {
 			return e2e_utils.WaitForDeploymentReady(ctx, k8sClient, e2e_utils.InstallNamespace, e2e_utils.DeploymentName)
 		}).WithContext(ctx).Should(Succeed(), "timed out waiting for Deployment %q to be ready", e2e_utils.DeploymentName)
+
+		By("detecting and configuring FIPS mode if cluster is FIPS-enabled")
+		e2e_utils.DetectAndConfigureFIPS(ctx, k8sClient)
 	})
 
 	It("injects CA into the policy-controller deployment", func(ctx SpecContext) {
@@ -291,6 +294,9 @@ var _ = Describe("Operator upgrade", Ordered, func() {
 				return e2e_utils.WaitForDeploymentReady(ctx, k8sClient, e2e_utils.InstallNamespace, e2e_utils.DeploymentName)
 			}).WithContext(ctx).Should(Succeed(), "timed out waiting for Deployment %q to be ready after CA injection", e2e_utils.DeploymentName)
 		}
+
+		By("re-configuring FIPS mode after upgrade if cluster is FIPS-enabled")
+		e2e_utils.DetectAndConfigureFIPS(ctx, k8sClient)
 
 		By("allowing already signed images through")
 		e2e_utils.Verify(ctx, k8sClient, upgradeTestNS, upgradeTestImage, false)

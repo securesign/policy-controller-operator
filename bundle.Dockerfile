@@ -59,7 +59,7 @@ LABEL name="rhtas/policy-controller-operator-bundle"
 
 LABEL features.operators.openshift.io/cni="false"
 LABEL features.operators.openshift.io/disconnected="false"
-LABEL features.operators.openshift.io/fips-compliant="false"
+LABEL features.operators.openshift.io/fips-compliant="true"
 LABEL features.operators.openshift.io/proxy-aware="false"
 LABEL features.operators.openshift.io/cnf="false"
 LABEL features.operators.openshift.io/csi="false"
