@@ -63,6 +63,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	k8sClient, err = client.New(restCfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
+	e2e_utils.SetRestConfig(restCfg)
 
 	ctx = context.Background()
 

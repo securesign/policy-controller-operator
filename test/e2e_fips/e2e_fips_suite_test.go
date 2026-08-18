@@ -1,6 +1,6 @@
-//go:build integration
+//go:build fips
 
-package e2e
+package e2e_fips
 
 import (
 	"context"
@@ -37,14 +37,14 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 }
 
-func TestE2e(t *testing.T) {
+func TestFips(t *testing.T) {
+	format.MaxLength = 0
 	RegisterFailHandler(Fail)
 	log.SetLogger(GinkgoLogr)
-	SetDefaultEventuallyTimeout(time.Duration(3) * time.Minute)
+	SetDefaultEventuallyTimeout(3 * time.Minute)
+	SetDefaultEventuallyPollingInterval(1 * time.Second)
 	EnforceDefaultTimeoutsWhenUsingContexts()
-	RunSpecs(t, "Policy Controller E2E Suite")
-
-	format.MaxLength = 0
+	RunSpecs(t, "Policy Controller FIPS E2E Suite")
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -62,14 +62,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	ctx = context.Background()
 
-	fmt.Println(">>> Running tests with the following parameters:")
-	fmt.Printf("  %-22s %s\n", "RHTAS Install Namespace:", e2e_utils.RhtasInstallNamespace())
-	fmt.Printf("  %-24s %s\n", "TUF URL:", e2e_utils.TufUrl())
-	fmt.Printf("  %-24s %s\n", "TSA URL:", e2e_utils.TsaUrl())
-	fmt.Printf("  %-24s %s\n", "Rekor URL:", e2e_utils.RekorUrl())
-	fmt.Printf("  %-24s %s\n", "Fulcio URL:", e2e_utils.FulcioUrl())
-	fmt.Printf("  %-24s %s\n", "OIDC Issuer URL:", e2e_utils.OidcIssuerUrl())
-	fmt.Printf("  %-24s %s\n", "OIDC Issuer Subject:", e2e_utils.OidcIssuerSubject())
+	fmt.Println(">>> Running FIPS E2E tests with the following parameters:")
+	fmt.Printf("  %-24s %s\n", "Install Namespace:", e2e_utils.InstallNamespace)
 	fmt.Printf("  %-24s %s\n", "Inject CA:", e2e_utils.InjectCA())
 
 	By("ensuring the policy-controller-operator namespace exists")
@@ -77,7 +71,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		ObjectMeta: metav1.ObjectMeta{Name: e2e_utils.InstallNamespace},
 	})).To(SatisfyAny(Succeed(), MatchError(ContainSubstring("already exists"))))
 
-	By("applying the operator bundle: " + e2e_utils.PolicyControllerCRPath)
+	By("applying the PolicyController CR")
 	renderedPolicyController, err := e2e_utils.RenderTemplate(e2e_utils.PolicyControllerCRPath, map[string]string{
 		"NS": e2e_utils.InstallNamespace,
 	})
@@ -89,11 +83,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		return e2e_utils.WaitForDeploymentReady(ctx, k8sClient, e2e_utils.InstallNamespace, e2e_utils.DeploymentName)
 	}).WithContext(ctx).Should(Succeed(), "timed out waiting for Deployment %q to be ready", e2e_utils.DeploymentName)
 
-	By("detecting and configuring FIPS mode if cluster is FIPS-enabled")
+	By("detecting and configuring FIPS mode")
 	e2e_utils.DetectAndConfigureFIPS(ctx, k8sClient)
 
 	By("injecting CA")
-	injectCA, err = strconv.ParseBool(strings.TrimSpace(e2e_utils.InjectCA()))
+	injectCA, err := strconv.ParseBool(strings.TrimSpace(e2e_utils.InjectCA()))
 	Expect(err).NotTo(HaveOccurred())
 	if injectCA {
 		Expect(e2e_utils.InjectCAIntoDeployment(ctx, k8sClient, e2e_utils.DeploymentName, e2e_utils.InstallNamespace)).To(Succeed())
@@ -108,15 +102,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	By("verifying all required resources are created")
 	e2e_utils.ExpectRequiredResources(ctx, k8sClient)
-
-	By("asserting admission webhook behaviour")
-	renderedPolicyController, err = e2e_utils.RenderTemplate(e2e_utils.PolicyControllerCRPath, map[string]string{
-		"NS": "default",
-	})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(e2e_utils.ApplyManifest(ctx, k8sClient, renderedPolicyController, "")).
-		To(MatchError(ContainSubstring(`PolicyController objects may only be created in the "policy-controller-operator" namespace`)))
-
 })
 
 var _ = AfterSuite(func() {

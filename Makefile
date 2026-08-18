@@ -278,7 +278,11 @@ e2e-test:
 
 .PHONY: e2e-test-upgrade
 e2e-test-upgrade:
-	go test -count=1 -tags=upgrade -v -timeout 30m ./test/... 
+	go test -count=1 -tags=upgrade -v -timeout 30m ./test/...
+
+.PHONY: e2e-test-fips
+e2e-test-fips:
+	go test -count=1 -tags=fips -v -timeout 30m ./test/...
 
 # Generate related image
 FILE := helm-charts/policy-controller-operator/values.yaml
