@@ -16,7 +16,7 @@ policy-controller:
     name: webhook
     image:
       repository: registry.redhat.io/rhtas/policy-controller-rhel9
-      version: sha256:8bd5171bc05bdbf77622db9ea77f47a59e881cc876f0fadf2c03f7006eb816d5
+      version: sha256:3637dc531225a899df7d67c538ae30cad4be8871ad428701208fef2f3a7160b1
       pullPolicy: IfNotPresent
     env:
       KUBERNETES_MIN_VERSION: "1.29.0-0"
@@ -91,8 +91,8 @@ policy-controller:
   leasescleanup:
     priorityClass: ""
     image:
-      repository: registry.redhat.io/openshift4/ose-cli@sha256
-      version: eba94f94949aca0330425b1ae3897f37b2365fc09fc88d60615ca7d02b06e8a9
+      repository: registry.redhat.io/openshift4/ose-cli-rhel9@sha256
+      version: 8c717f0325304843d321c1915a5172b8945720a807d4bb548f5bd935d7f1a9e9
       pullPolicy: IfNotPresent
     resources:
       limits:
