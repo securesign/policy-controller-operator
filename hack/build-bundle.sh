@@ -61,7 +61,7 @@ RELATED_IMAGE_OSE_CLI_DIGEST="$(
   }' "$FILE"
 )"
 echo "RELATED_IMAGE_POLICY_CONTROLLER=registry.redhat.io/rhtas/policy-controller-rhel9@${RELATED_IMAGE_POLICY_CONTROLLER_DIGEST}" > config/manager/images.env
-echo "RELATED_IMAGE_OSE_CLI=registry.redhat.io/openshift4/ose-cli@sha256:${RELATED_IMAGE_OSE_CLI_DIGEST}" >> config/manager/images.env
+echo "RELATED_IMAGE_OSE_CLI=registry.redhat.io/openshift4/ose-cli-rhel9@sha256:${RELATED_IMAGE_OSE_CLI_DIGEST}" >> config/manager/images.env
 
 # Generate and validate the Operator bundle
 oc kustomize config/manifests | operator-sdk generate bundle ${BUNDLE_GEN_FLAGS} && operator-sdk bundle validate ./bundle
