@@ -19,14 +19,15 @@ metadata:
 spec:
   selector:
     matchLabels:
-      control-plane: policy-controller-operator
+      control-plane: controller-manager
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: policy-controller-operator
+        control-plane: controller-manager
+        app.kubernetes.io/name: policy-controller-operator
     spec:
       securityContext:
         runAsNonRoot: true

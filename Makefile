@@ -267,6 +267,7 @@ catalog-push: ## Push a catalog image.
 .PHONY: unit-test
 unit-test:
 	cd cmd && go test -count=1 ./...
+	go test -count=1 ./test/manifests/...
 
 .PHONY: unit-test-coverage
 unit-test-coverage:
