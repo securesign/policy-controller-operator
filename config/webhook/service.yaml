@@ -12,4 +12,4 @@ spec:
       targetPort: 9443
       protocol: TCP
   selector:
-    control-plane: policy-controller-operator
+    app.kubernetes.io/name: policy-controller-operator
