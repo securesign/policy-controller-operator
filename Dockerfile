@@ -22,7 +22,7 @@ RUN tar -xvf ${HOME}/helm-charts/policy-controller-operator/charts/policy-contro
     rm ${HOME}/helm-charts/policy-controller-operator/charts/policy-controller-*.tgz
 
 # Build the manager binary
-FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator:latest@sha256:b93f611c5f521cc81bd6a919851d0d8190600ae64d1346096d653176092c29aa
+FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator:latest@sha256:3f6ae2b786428168d1f18da03ca4c51c7e4c34b345e7d59992816e3e25f80aa4
 
 LABEL description="The image for the policy-controller-operator."
 LABEL io.k8s.description="The image for the policy-controller-operator."
