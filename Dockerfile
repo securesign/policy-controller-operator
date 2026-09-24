@@ -1,5 +1,5 @@
 # Build the admission-webhook-controller binary
-FROM registry.redhat.io/ubi9/go-toolset:latest@sha256:15c3098dc4639e8a0e6a1bc77b50964513a1d76dccae4b07b9808101c5addd04 AS admission-webhook-controller
+FROM registry.redhat.io/ubi9/go-toolset:latest@sha256:0a4666f7a4eb0644c97a73cba198eb268691b270d97831822689e7a2088f87be AS admission-webhook-controller
 WORKDIR /opt/app-root/src/
 ENV CGO_ENABLED=0
 ENV GOFIPS140=v1.0.0
