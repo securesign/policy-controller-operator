@@ -29,15 +29,6 @@
   "packageRules": [
     {
       "description": [
-        "Hold Go directive at <=1.24"
-      ],
-      "matchDatasources": [
-        "golang-version"
-      ],
-      "allowedVersions": "<=1.24.0"
-    },
-    {
-      "description": [
         "Group all Go module updates together"
       ],
       "matchManagers": [
@@ -55,21 +46,54 @@
       ],
       "groupName": "Docker Images",
       "groupSlug": "docker-deps"
-    },
-    {
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "golang"
-      ],
-      "allowedVersions": "<=1.24.0"
     }
   ],
   "gomod": {
     "postUpdateOptions": [
-      "gomodUpdateImportPaths",
       "gomodTidy"
+    ],
+    "packageRules": [
+      {
+        "description": [
+          "Allow MintMaker to update indirect Go dependencies"
+        ],
+        "matchManagers": [
+          "gomod"
+        ],
+        "matchDepTypes": [
+          "indirect"
+        ],
+        "enabled": true
+      },
+      {
+        "description": [
+          "Go version upgrades must be performed manually"
+        ],
+        "matchDepTypes": [
+          "golang",
+          "toolchain"
+        ],
+        "allowedVersions": "<=1.26.0",
+        "enabled": false
+      },
+      {
+        "description": [
+          "Reject dependencies that require a newer Go version"
+        ],
+        "matchManagers": [
+          "gomod"
+        ],
+        "constraintsFiltering": "strict"
+      },
+      {
+        "description": [
+          "Sigstore dependency updates must be performed manually"
+        ],
+        "matchPackageNames": [
+          "/^github\\.com\\/sigstore\\//"
+        ],
+        "enabled": false
+      }
     ]
   }
 }
