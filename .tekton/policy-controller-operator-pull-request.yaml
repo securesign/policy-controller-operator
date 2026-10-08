@@ -44,9 +44,9 @@ spec:
   - name: prefetch-input
     value: '[{"type": "gomod", "path": "."}, {"type": "rpm", "path": "."}]'
   - name: image-version
-    value: "1.1.0"
+    value: "1.1.1"
   - name: release-version
-    value: "1.5.0"
+    value: "1.5.1"
   - name: fips-check
     value: "true"
   pipelineRef:
