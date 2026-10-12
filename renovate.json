@@ -1,13 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "labels": [
-    "dependencies"
-  ],
-  "ignorePresets": [
-    "config:recommended",
-    "group:recommended",
-    "group:monorepo"
-  ],
   "enabledManagers": [
     "dockerfile",
     "gomod",
@@ -26,74 +18,48 @@
       "datasourceTemplate": "docker"
     }
   ],
-  "packageRules": [
-    {
-      "description": [
-        "Group all Go module updates together"
-      ],
-      "matchManagers": [
-        "gomod"
-      ],
-      "groupName": "Go Dependencies",
-      "groupSlug": "go-deps"
-    },
-    {
-      "description": [
-        "Group all Docker image updates together"
-      ],
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "groupName": "Docker Images",
-      "groupSlug": "docker-deps"
-    }
-  ],
+  "constraintsFiltering": "strict",
   "gomod": {
-    "postUpdateOptions": [
-      "gomodTidy"
-    ],
     "packageRules": [
       {
-        "description": [
-          "Allow MintMaker to update indirect Go dependencies"
+        "description": "Do not bump the go directive - must stay at current version to prevent cascading dep upgrades",
+        "matchPackageNames": [
+          "go"
         ],
-        "matchManagers": [
-          "gomod"
-        ],
+        "enabled": false
+      },
+      {
+        "description": "Allow MintMaker to update indirect Go dependencies",
         "matchDepTypes": [
           "indirect"
         ],
         "enabled": true
       },
       {
-        "description": [
-          "Go version upgrades must be performed manually"
-        ],
-        "matchDepTypes": [
-          "golang",
-          "toolchain"
-        ],
-        "allowedVersions": "<=1.26.0",
-        "enabled": false
-      },
-      {
-        "description": [
-          "Reject dependencies that require a newer Go version"
-        ],
-        "matchManagers": [
-          "gomod"
-        ],
-        "constraintsFiltering": "strict"
-      },
-      {
-        "description": [
-          "Sigstore dependency updates must be performed manually"
-        ],
+        "description": "Sigstore dependency updates must be performed manually",
         "matchPackageNames": [
           "/^github\\.com\\/sigstore\\//"
         ],
         "enabled": false
+      },
+      {
+        "description": "Group all Go module updates together",
+        "matchPackageNames": [
+          "*"
+        ],
+        "groupName": "Go Dependencies",
+        "groupSlug": "go-deps"
       }
     ]
-  }
+  },
+  "packageRules": [
+    {
+      "description": "Group all Docker image updates together",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "Docker Images",
+      "groupSlug": "docker-deps"
+    }
+  ]
 }
