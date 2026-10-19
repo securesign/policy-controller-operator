@@ -14,13 +14,11 @@ import (
 )
 
 const (
-	managerPath       = "../../config/manager/manager.yaml"
-	webhookSvcPath    = "../../config/webhook/service.yaml"
-	metricsSvcPath    = "../../config/default/metrics_service.yaml"
-	networkPolicyPath = "../../config/network-policy/allow-metrics-traffic.yaml"
-
-	legacySelectorLabel = "control-plane"
-	legacySelectorValue = "controller-manager"
+	managerPath        = "../../config/manager/manager.yaml"
+	webhookSvcPath     = "../../config/webhook/service.yaml"
+	metricsSvcPath     = "../../config/default/metrics_service.yaml"
+	networkPolicyPath  = "../../config/network-policy/allow-metrics-traffic.yaml"
+	serviceMonitorPath = "../../config/prometheus/monitor.yaml"
 
 	uniqueLabel      = "app.kubernetes.io/name"
 	uniqueLabelValue = "policy-controller-operator"
@@ -43,7 +41,7 @@ func loadDeployment(t *testing.T) *appsv1.Deployment {
 		if err != nil {
 			t.Fatalf("decoding deployment: %v", err)
 		}
-		if dep.Kind == "Deployment" && dep.Name == "controller-manager" {
+		if dep.Kind == "Deployment" && dep.Name != "" {
 			return &dep
 		}
 	}
@@ -64,7 +62,7 @@ func loadService(t *testing.T, path string) *corev1.Service {
 	return &svc
 }
 
-func TestDeploymentSelectorCompatibleWithV102(t *testing.T) {
+func TestDeploymentSelectorUsesUniqueLabel(t *testing.T) {
 	dep := loadDeployment(t)
 
 	sel := dep.Spec.Selector
@@ -72,7 +70,7 @@ func TestDeploymentSelectorCompatibleWithV102(t *testing.T) {
 		t.Fatal("spec.selector is nil — must not be omitted")
 	}
 
-	want := map[string]string{legacySelectorLabel: legacySelectorValue}
+	want := map[string]string{uniqueLabel: uniqueLabelValue}
 
 	if len(sel.MatchLabels) != len(want) {
 		t.Errorf("spec.selector.matchLabels has %d keys, want exactly %d: got %v, want %v",
@@ -82,20 +80,19 @@ func TestDeploymentSelectorCompatibleWithV102(t *testing.T) {
 	for key, expected := range want {
 		got, ok := sel.MatchLabels[key]
 		if !ok || got != expected {
-			t.Errorf("spec.selector.matchLabels[%q] = %q, want %q (v1.0.2 compat)",
+			t.Errorf("spec.selector.matchLabels[%q] = %q, want %q",
 				key, got, expected)
 		}
 	}
 }
 
-func TestPodTemplateMatchesSelector(t *testing.T) {
+func TestDeploymentName(t *testing.T) {
 	dep := loadDeployment(t)
 
-	podLabels := dep.Spec.Template.Labels
-	got, ok := podLabels[legacySelectorLabel]
-	if !ok || got != legacySelectorValue {
-		t.Errorf("pod template labels[%q] = %q, want %q",
-			legacySelectorLabel, got, legacySelectorValue)
+	if dep.Name != "policy-controller-operator" {
+		t.Errorf("Deployment name = %q, want %q — "+
+			"renamed from controller-manager to force OLM to create a fresh resource "+
+			"and avoid immutable-selector upgrade failures", dep.Name, "policy-controller-operator")
 	}
 }
 
@@ -107,6 +104,15 @@ func TestPodTemplateCarriesUniqueLabel(t *testing.T) {
 	if !ok || got != uniqueLabelValue {
 		t.Errorf("pod template labels[%q] = %q, want %q",
 			uniqueLabel, got, uniqueLabelValue)
+	}
+}
+
+func TestPodTemplateDoesNotCarryLegacyLabel(t *testing.T) {
+	dep := loadDeployment(t)
+
+	if _, has := dep.Spec.Template.Labels["control-plane"]; has {
+		t.Error("pod template must NOT carry the legacy control-plane label — " +
+			"it causes collisions with other operators using the same default label")
 	}
 }
 
@@ -124,7 +130,7 @@ func TestWebhookServiceSelectsOnlyUniqueLabel(t *testing.T) {
 			uniqueLabel, got, uniqueLabelValue)
 	}
 
-	if _, has := svc.Spec.Selector[legacySelectorLabel]; has {
+	if _, has := svc.Spec.Selector["control-plane"]; has {
 		t.Error("webhook Service selector must NOT contain the legacy control-plane label")
 	}
 }
@@ -132,37 +138,23 @@ func TestWebhookServiceSelectsOnlyUniqueLabel(t *testing.T) {
 func TestMetricsServiceSelectsOnlyUniqueLabel(t *testing.T) {
 	svc := loadService(t, metricsSvcPath)
 
+	if len(svc.Spec.Selector) != 1 {
+		t.Errorf("metrics Service selector has %d keys, want exactly 1: %v",
+			len(svc.Spec.Selector), svc.Spec.Selector)
+	}
+
 	got, ok := svc.Spec.Selector[uniqueLabel]
 	if !ok || got != uniqueLabelValue {
 		t.Errorf("metrics Service selector[%q] = %q, want %q",
 			uniqueLabel, got, uniqueLabelValue)
 	}
 
-	if _, has := svc.Spec.Selector[legacySelectorLabel]; has {
+	if _, has := svc.Spec.Selector["control-plane"]; has {
 		t.Error("metrics Service selector must NOT contain the legacy control-plane label")
 	}
 }
 
-func TestWebhookServiceIsolatesFromCollidingOperators(t *testing.T) {
-	dep := loadDeployment(t)
-	svc := loadService(t, webhookSvcPath)
-
-	for key, val := range svc.Spec.Selector {
-		podVal, ok := dep.Spec.Template.Labels[key]
-		if !ok || podVal != val {
-			t.Errorf("Service selector %s=%s does not match pod template label %s=%s",
-				key, val, key, podVal)
-		}
-	}
-
-	if _, has := svc.Spec.Selector[legacySelectorLabel]; has {
-		t.Error("webhook Service must not select on control-plane label — " +
-			"another operator sharing the namespace with control-plane=controller-manager " +
-			"would receive webhook traffic")
-	}
-}
-
-func TestFreshInstallLabelsConsistent(t *testing.T) {
+func TestLabelsConsistent(t *testing.T) {
 	dep := loadDeployment(t)
 	webhookSvc := loadService(t, webhookSvcPath)
 	metricsSvc := loadService(t, metricsSvcPath)
@@ -192,28 +184,59 @@ func TestFreshInstallLabelsConsistent(t *testing.T) {
 	}
 }
 
-func TestOLMUpgradeV102ToV110SelectorUnchanged(t *testing.T) {
-	dep := loadDeployment(t)
+func TestServiceMonitorSelectsMetricsService(t *testing.T) {
+	metricsSvc := loadService(t, metricsSvcPath)
+	webhookSvc := loadService(t, webhookSvcPath)
 
-	v102Selector := map[string]string{
-		"control-plane": "controller-manager",
+	data, err := os.ReadFile(serviceMonitorPath)
+	if err != nil {
+		t.Fatalf("reading %s: %v", serviceMonitorPath, err)
+	}
+	var raw map[string]interface{}
+	if err := sigyaml.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("decoding ServiceMonitor: %v", err)
+	}
+	spec, ok := raw["spec"].(map[string]interface{})
+	if !ok {
+		t.Fatal("ServiceMonitor missing spec")
+	}
+	selector, ok := spec["selector"].(map[string]interface{})
+	if !ok {
+		t.Fatal("ServiceMonitor missing spec.selector")
+	}
+	matchLabels, ok := selector["matchLabels"].(map[string]interface{})
+	if !ok {
+		t.Fatal("ServiceMonitor missing spec.selector.matchLabels")
 	}
 
-	if len(dep.Spec.Selector.MatchLabels) != len(v102Selector) {
-		t.Errorf("v1.1.0 Deployment selector has %d keys, want exactly %d: got %v, want %v — extra keys break the immutable-selector upgrade path",
-			len(dep.Spec.Selector.MatchLabels), len(v102Selector), dep.Spec.Selector.MatchLabels, v102Selector)
+	if _, ok := matchLabels["app.kubernetes.io/component"]; !ok {
+		t.Error("ServiceMonitor selector must include app.kubernetes.io/component to distinguish " +
+			"the metrics Service from other Services sharing the same app.kubernetes.io/name label")
 	}
 
-	for key, expected := range v102Selector {
-		got, ok := dep.Spec.Selector.MatchLabels[key]
+	for key, val := range matchLabels {
+		strVal, ok := val.(string)
 		if !ok {
-			t.Errorf("v1.1.0 Deployment selector missing key %q that v1.0.2 had", key)
-			continue
+			t.Fatalf("ServiceMonitor selector value for %q is not a string: %v", key, val)
 		}
-		if got != expected {
-			t.Errorf("v1.1.0 Deployment selector[%q] = %q, v1.0.2 had %q — OLM upgrade will fail (immutable field)",
-				key, got, expected)
+		svcVal := metricsSvc.Labels[key]
+		if svcVal != strVal {
+			t.Errorf("ServiceMonitor selector %s=%s not satisfied by metrics Service labels (has %s=%s)",
+				key, strVal, key, svcVal)
 		}
+	}
+
+	allMatch := true
+	for key, val := range matchLabels {
+		strVal, _ := val.(string)
+		if webhookSvc.Labels[key] != strVal {
+			allMatch = false
+			break
+		}
+	}
+	if allMatch {
+		t.Error("ServiceMonitor selector must not match the webhook Service — " +
+			"add a distinguishing label like app.kubernetes.io/component to the metrics Service")
 	}
 }
 
@@ -240,7 +263,7 @@ func TestNetworkPolicySelectsUniqueLabel(t *testing.T) {
 			uniqueLabel, got, uniqueLabelValue)
 	}
 
-	if _, has := podSel[legacySelectorLabel]; has {
+	if _, has := podSel["control-plane"]; has {
 		t.Error("NetworkPolicy podSelector must NOT use the legacy control-plane label")
 	}
 }
