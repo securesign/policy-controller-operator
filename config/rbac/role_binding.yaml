@@ -4,12 +4,12 @@ metadata:
   labels:
     app.kubernetes.io/name: policy-controller-operator
     app.kubernetes.io/managed-by: kustomize
-  name: manager-clusterrolebinding
+  name: policy-manager-clusterrolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-clusterrole
+  name: policy-manager-clusterrole
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
+  name: policy-controller-operator
   namespace: system
