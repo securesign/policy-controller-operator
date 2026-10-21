@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/name: policy-controller-operator
     app.kubernetes.io/managed-by: kustomize
-  name: manager-clusterrole
+  name: policy-manager-clusterrole
 rules:
 - apiGroups:
   - rbac.authorization.k8s.io

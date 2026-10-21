@@ -6,7 +6,7 @@ webhooks:
   - name: validation.policycontrollers.rhtas.charts.redhat.com
     clientConfig:
       service:
-        name: controller-manager-webhook-service
+        name: policy-controller-operator-webhook-service
         namespace: system
         path: /validate
     failurePolicy: Fail

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: controller-manager-webhook-service
+  name: policy-controller-operator-webhook-service
   namespace: system
   labels:
-    control-plane: policy-controller-operator
+    app.kubernetes.io/name: policy-controller-operator
 spec:
   ports:
     - name: https-webhook

@@ -10,7 +10,7 @@ replacements:
   - source:
       fieldPath: spec.template.spec.containers.[name=manager].image
       kind: Deployment
-      name: controller-manager
+      name: policy-controller-operator
     targets:
       - fieldPaths:
           - metadata.annotations.containerImage
