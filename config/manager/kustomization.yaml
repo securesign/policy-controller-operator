@@ -13,7 +13,7 @@ patches:
 - path: patches/manager_image_env_patch.yaml
   target:
     kind: Deployment
-    name: controller-manager
+    name: policy-controller-operator
 
 configMapGenerator:
 - behavior: create
@@ -34,7 +34,7 @@ replacements:
     - spec.template.spec.containers.[name=^manager$].env.[name=^RELATED_IMAGE_POLICY_CONTROLLER$].value
     select:
       kind: Deployment
-      name: controller-manager
+      name: policy-controller-operator
 - source:
     fieldPath: data.RELATED_IMAGE_OSE_CLI
     kind: ConfigMap
@@ -45,4 +45,4 @@ replacements:
     - spec.template.spec.containers.[name=^manager$].env.[name=^RELATED_IMAGE_OSE_CLI$].value
     select:
       kind: Deployment
-      name: controller-manager
+      name: policy-controller-operator

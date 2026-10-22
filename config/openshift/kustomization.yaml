@@ -5,7 +5,7 @@ patches:
 - path: serving_cert_annotation_patch.yaml
   target:
     kind: Service
-    name: controller-manager-webhook-service
+    name: policy-controller-operator-webhook-service
 
 - path: inject_ca_bundle_annotation_patch.yaml
   target:

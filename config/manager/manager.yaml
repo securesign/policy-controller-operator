@@ -2,7 +2,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: policy-controller-operator
     app.kubernetes.io/name: policy-controller-operator
     app.kubernetes.io/managed-by: kustomize
   name: system
@@ -10,23 +9,21 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: policy-controller-operator
   namespace: system
   labels:
-    control-plane: policy-controller-operator
     app.kubernetes.io/name: policy-controller-operator
     app.kubernetes.io/managed-by: kustomize
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/name: policy-controller-operator
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: controller-manager
         app.kubernetes.io/name: policy-controller-operator
     spec:
       securityContext:
@@ -89,5 +86,5 @@ spec:
       - name: cert
         secret:
           secretName: webhook-cert
-      serviceAccountName: controller-manager
+      serviceAccountName: policy-controller-operator
       terminationGracePeriodSeconds: 10

@@ -99,10 +99,10 @@ func GetDeploymentPod(ctx context.Context, k8sClient client.Client, namespace, d
 func FindOperatorDeployment(ctx context.Context, k8sClient client.Client) *appsv1.Deployment {
 	depList := &appsv1.DeploymentList{}
 	Expect(k8sClient.List(ctx, depList,
-		client.MatchingLabels{"control-plane": "policy-controller-operator"},
+		client.MatchingLabels{"app.kubernetes.io/name": "policy-controller-operator"},
 	)).To(Succeed())
 	Expect(depList.Items).ToNot(BeEmpty(),
-		"could not find operator deployment with label control-plane=policy-controller-operator")
+		"could not find operator deployment with label app.kubernetes.io/name=policy-controller-operator")
 	return &depList.Items[0]
 }
 
