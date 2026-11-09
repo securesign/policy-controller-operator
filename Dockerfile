@@ -12,7 +12,7 @@ RUN go mod edit -godebug=fips140=auto && \
     go build -mod=mod -tags 'no_openssl' -o admission-webhook-controller ./cmd
 
 # Unpack Helm chart
-FROM registry.redhat.io/ubi9/ubi-minimal:latest@sha256:dfa0eb04abc59221544e74862432496add1f491f915c9b531880f91affc0e12c AS unpack-templates
+FROM registry.redhat.io/ubi9/ubi-minimal:latest@sha256:f26ef64172ea61f5ac5ba4be8c5c738bf8760b22b3e5148ce7b40f7308ab32db AS unpack-templates
 WORKDIR /opt/app-root/src/
 ENV HOME=/opt/app-root/src/
 
@@ -23,7 +23,7 @@ RUN tar -xvf ${HOME}/helm-charts/policy-controller-operator/charts/policy-contro
     rm ${HOME}/helm-charts/policy-controller-operator/charts/policy-controller-*.tgz
 
 # Build the manager binary
-FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator:latest@sha256:402336122db40c44044975a129dbfccac1aad72e03eabb5620cf11ee99773801
+FROM registry.redhat.io/openshift4/ose-helm-rhel9-operator:latest@sha256:1527eb20275f29f58f24d7d539a7aa35bb504815f661a49ff1348f18c618eabb
 
 LABEL description="The image for the policy-controller-operator."
 LABEL io.k8s.description="The image for the policy-controller-operator."
