@@ -41,9 +41,9 @@ spec:
   - name: prefetch-input
     value: '[{"type": "gomod", "path": "."}, {"type": "rpm", "path": "."}]'
   - name: image-version
-    value: "1.0.3"
+    value: "1.0.4"
   - name: release-version
-    value: "1.4.4"
+    value: "1.4.5"
   pipelineRef:
     params:
     - name: url
