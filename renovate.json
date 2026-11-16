@@ -1,9 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>securesign/renovate-config//org-inherited-config.json"
+  ],
   "enabledManagers": [
     "dockerfile",
     "gomod",
     "custom.regex"
+  ],
+  "ignorePaths": [
+    ".github/workflows/**"
   ],
   "customManagers": [
     {
@@ -53,6 +59,13 @@
     ]
   },
   "packageRules": [
+    {
+      "description": "Disable GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "enabled": false
+    },
     {
       "description": "Group all Docker image updates together",
       "matchManagers": [
