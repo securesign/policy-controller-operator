@@ -42,6 +42,17 @@
         "enabled": true
       },
       {
+        "description": "Keep Kubernetes implementation dependencies aligned with the direct Kubernetes modules",
+        "matchPackageNames": [
+          "k8s.io/kube-openapi",
+          "/^sigs\\.k8s\\.io\\/structured-merge-diff\\//"
+        ],
+        "matchDepTypes": [
+          "indirect"
+        ],
+        "enabled": false
+      },
+      {
         "description": "Sigstore dependency updates must be performed manually",
         "matchPackageNames": [
           "/^github\\.com\\/sigstore\\//"
