@@ -42,10 +42,6 @@ spec:
     value: appstudio.openshift.io/application=policy-controller-operator-v1-1,appstudio.openshift.io/component=policy-controller-operator-v1-1,pipelinesascode.tekton.dev/sha={{revision}},pipelinesascode.tekton.dev/event-type=push
   - name: manager-registry-url
     value: registry.redhat.io/rhtas/policy-controller-rhel9-operator
-  - name: image-version
-    value: "1.1.2"
-  - name: release-version
-    value: "1.5.1"
   - name: fips-check
     value: "true"
   pipelineRef:
